@@ -127,11 +127,15 @@ User Action → UploadController → Service (VideoService/ApiClient)
 
 ### Important Constraints
 
-- **Video Limits**: Max 20 seconds duration, max 100MB file size (configured in `VideoService`)
+- **Video Limits**: Max 20 seconds duration, max 100MB file size (configured in `VideoConfig`)
 - **Web Limitations**: Camera recording disabled on web (only file upload supported)
 - **Network Timeout**: API requests timeout after 30 seconds
 - **MVP Scope**: Backend response body is intentionally ignored; all intelligence is server-side
 - **Pose Data Sync**: Video player syncs pose overlay within 100ms threshold of current timestamp
+
+### Planned Features (Not Yet Implemented)
+
+- **Video Trimming**: The state management infrastructure supports video trimming (start/end time tracking), but the UI and actual video encoding are not yet implemented. Trim times are tracked in `VideoMetadata` and can be sent to the backend, but users cannot currently adjust them through the UI.
 
 ### Design System
 
@@ -156,25 +160,21 @@ The pose overlay system uses Flutter's `CustomPainter` API:
 
 ## Code Quality Notes
 
-### Known Issues
+### Recent Code Quality Improvements
 
-1. **Deprecation Warnings** (5 total):
-   - `Color.withOpacity()` should be replaced with `Color.withValues(alpha: ...)`
-   - `ColorScheme.background` should be replaced with `ColorScheme.surface`
-   - Run `flutter analyze` to see specific locations
+- ✅ **Fixed Deprecation Warnings**: All 24 deprecation warnings resolved (Color.withOpacity → withValues, ColorScheme.background → surface)
+- ✅ **Pinned Dependencies**: All main dependencies now pinned to specific versions (http ^1.6.0, image_picker ^1.2.1, video_player ^2.10.1)
+- ✅ **Type Safety**: Fixed `AnalysisResult.feedbackItems` to use `List<FeedbackItem>` instead of `List<dynamic>`
+- ✅ **Centralized Configuration**: Created `VideoConfig` class for validation constants (fixes 50MB vs 100MB error message inconsistency)
+- ✅ **Dependency Injection**: Services now provided via Provider instead of direct instantiation in widgets
+- ✅ **Global Error Handling**: Added runZonedGuarded and custom error widget for better error handling
 
-2. **Unpinned Dependencies**:
-   - `http`, `image_picker`, and `video_player` use `any` version
-   - Should be pinned to specific versions before production deployment
+### Remaining Known Issues
 
-3. **Test Coverage**:
-   - Only placeholder widget test exists
-   - Need unit tests for controllers, services, and models
-   - Need widget tests for key UI components
-
-4. **Type Safety**:
-   - `AnalysisResult.feedbackItems` uses `List<dynamic>` instead of `List<FeedbackItem>`
-   - Should be fixed to maintain strong typing
+1. **Test Coverage**:
+   - No unit tests for controllers, services, or models
+   - No widget tests for key UI components
+   - Need to add test infrastructure
 
 ### Extensibility Strengths
 

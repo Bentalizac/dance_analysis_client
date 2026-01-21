@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../services/api_client.dart';
@@ -10,10 +11,12 @@ import '../services/video_service.dart';
 import '../state/upload_controller.dart';
 import '../state/upload_state.dart';
 import 'design_system.dart';
-import 'widgets/inline_timestamp_form.dart';
 import 'widgets/recommend_timestamps_dialog.dart';
-import 'widgets/timestamp_list_item.dart';
+import 'widgets/timestamp_manager.dart';
+import 'widgets/video_info_card.dart';
 import 'widgets/video_placeholder.dart';
+import 'widgets/video_player_widget.dart';
+import 'widgets/video_selection_buttons.dart';
 
 /// Upload page with video preview, timestamp management, and trimming controls.
 ///
@@ -38,9 +41,13 @@ class _UploadPageState extends State<UploadPage> {
   @override
   void initState() {
     super.initState();
+    // Get services from Provider
+    final videoService = context.read<VideoService>();
+    final apiClient = context.read<ApiClient>();
+
     _controller = UploadController(
-      videoService: VideoService(),
-      apiClient: ApiClient(),
+      videoService: videoService,
+      apiClient: apiClient,
     );
     _emailController = TextEditingController();
 
@@ -106,9 +113,15 @@ class _UploadPageState extends State<UploadPage> {
   void _disposeVideoPlayer() {
     _videoPlayerController?.dispose();
     _videoPlayerController = null;
-    setState(() {
+    // Only call setState if still mounted
+    if (mounted) {
+      setState(() {
+        _isVideoPlayerInitialized = false;
+      });
+    } else {
+      // If not mounted, just update the field directly
       _isVideoPlayerInitialized = false;
-    });
+    }
   }
 
   @override
@@ -158,6 +171,19 @@ class _UploadPageState extends State<UploadPage> {
     _videoPlayerController?.seekTo(startTime);
   }
 
+  bool _isBusy(UploadState state) {
+    return switch (state.status) {
+      UploadStatus.uploading || UploadStatus.processing => true,
+      _ => false,
+    };
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,7 +204,10 @@ class _UploadPageState extends State<UploadPage> {
                 children: [
                   // Video player or placeholder
                   if (state.hasVideo && _isVideoPlayerInitialized)
-                    _buildVideoPlayer()
+                    VideoPlayerWidget(
+                      controller: _videoPlayerController!,
+                      maxHeight: MediaQuery.of(context).size.height * 0.4,
+                    )
                   else if (state.hasVideo)
                     _buildVideoLoadingPlaceholder()
                   else
@@ -201,7 +230,27 @@ class _UploadPageState extends State<UploadPage> {
                       ),
                     ),
                     child: state.hasVideo
-                        ? _buildTimestampsList(state)
+                        ? TimestampManager(
+                            timestamps: state.timestamps,
+                            isAddingTimestamp: state.isAddingTimestamp,
+                            editingTimestampId: state.editingTimestampId,
+                            currentVideoPosition: _currentVideoPosition,
+                            maxDuration: state.video?.duration,
+                            onAddTimestamp: _controller.startAddingTimestamp,
+                            onSaveTimestamp: _controller.addTimestamp,
+                            onEditTimestamp: _controller.startEditingTimestamp,
+                            onUpdateTimestamp: (id, start, end, label) {
+                              _controller.updateTimestamp(
+                                id,
+                                startTime: start,
+                                endTime: end,
+                                label: label,
+                              );
+                            },
+                            onDeleteTimestamp: _controller.removeTimestamp,
+                            onSeekToTimestamp: _seekToTimestamp,
+                            onCancelForm: _controller.cancelTimestampForm,
+                          )
                         : _buildEmptyVideoState(),
                   ),
                 ],
@@ -213,85 +262,12 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  Widget _buildVideoPlayer() {
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.4,
-      ),
-      child: AspectRatio(
-        aspectRatio: _videoPlayerController!.value.aspectRatio,
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            VideoPlayer(_videoPlayerController!),
-            _buildVideoControls(),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildVideoLoadingPlaceholder() {
     return Container(
       height: 300,
       color: AppDesignSystem.backgroundDark,
       child: const Center(
         child: CircularProgressIndicator(color: AppDesignSystem.accentBlue),
-      ),
-    );
-  }
-
-  Widget _buildVideoControls() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              _videoPlayerController!.value.isPlaying
-                  ? Icons.pause
-                  : Icons.play_arrow,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                if (_videoPlayerController!.value.isPlaying) {
-                  _videoPlayerController!.pause();
-                } else {
-                  _videoPlayerController!.play();
-                }
-              });
-            },
-          ),
-          Expanded(
-            child: VideoProgressIndicator(
-              _videoPlayerController!,
-              allowScrubbing: true,
-              colors: const VideoProgressColors(
-                playedColor: AppDesignSystem.accentBlue,
-                bufferedColor: Colors.white24,
-                backgroundColor: Colors.white12,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDesignSystem.spacingSm,
-            ),
-            child: Text(
-              _formatDuration(_videoPlayerController!.value.position),
-              style: AppDesignSystem.smallTextStyle.copyWith(
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -334,9 +310,29 @@ class _UploadPageState extends State<UploadPage> {
 
           // Video selection buttons or video info
           if (!state.hasVideo)
-            _buildVideoSelectionButtons(state)
+            VideoSelectionButtons(
+              onVideoSelected: _controller.pickVideo,
+              isBusy: _isBusy(state),
+            )
           else
-            _buildVideoInfo(state),
+            VideoInfoCard(
+              durationSeconds: state.effectiveDuration.inSeconds,
+              sizeMb: state.video!.sizeBytes / (1024 * 1024),
+              isTrimmed: state.isTrimmed,
+              trimStartFormatted: _formatDuration(state.trimStart),
+              trimEndFormatted: _formatDuration(
+                state.trimEnd ?? state.video!.duration,
+              ),
+              canUpload: state.canUpload,
+              isBusy: _isBusy(state),
+              statusLabel: state.statusLabel,
+              onUpload: _handleUpload,
+              onRemove: () {
+                setState(() {
+                  _controller.pickVideo(ImageSource.gallery);
+                });
+              },
+            ),
 
           // Error message
           if (state.errorMessage != null) ...[
@@ -375,189 +371,6 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  Widget _buildVideoSelectionButtons(UploadState state) {
-    final isBusy = _isBusy(state);
-
-    if (kIsWeb) {
-      return ElevatedButton.icon(
-        onPressed: isBusy
-            ? null
-            : () => _controller.pickVideo(ImageSource.gallery),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Choose video file'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppDesignSystem.accentBlue,
-          foregroundColor: AppDesignSystem.backgroundDark,
-          padding: const EdgeInsets.symmetric(
-            vertical: AppDesignSystem.spacingMd,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: isBusy
-                ? null
-                : () => _controller.pickVideo(ImageSource.camera),
-            icon: const Icon(Icons.videocam),
-            label: const Text('Record'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.accentBlue,
-              foregroundColor: AppDesignSystem.backgroundDark,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingMd,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppDesignSystem.spacingSm),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: isBusy
-                ? null
-                : () => _controller.pickVideo(ImageSource.gallery),
-            icon: const Icon(Icons.video_library),
-            label: const Text('Choose'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppDesignSystem.accentBlue,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingMd,
-              ),
-              side: const BorderSide(color: AppDesignSystem.accentBlue),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVideoInfo(UploadState state) {
-    final video = state.video!;
-    final durationSeconds = state.effectiveDuration.inSeconds;
-    final sizeMb = (video.sizeBytes / (1024 * 1024)).toStringAsFixed(1);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Video Ready',
-                    style: const TextStyle(
-                      color: AppDesignSystem.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingXs),
-                  Text(
-                    'Duration: ${durationSeconds}s • Size: ${sizeMb}MB',
-                    style: AppDesignSystem.feedbackStyle.copyWith(
-                      color: AppDesignSystem.textSecondary,
-                    ),
-                  ),
-                  if (state.isTrimmed)
-                    Text(
-                      'Trimmed from ${_formatDuration(state.trimStart)} to ${_formatDuration(state.trimEnd ?? video.duration)}',
-                      style: AppDesignSystem.smallTextStyle.copyWith(
-                        color: AppDesignSystem.accentBlue,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              color: AppDesignSystem.textSecondary,
-              onPressed: () {
-                setState(() {
-                  _controller.pickVideo(ImageSource.gallery);
-                });
-              },
-              tooltip: 'Remove video',
-            ),
-          ],
-        ),
-        const SizedBox(height: AppDesignSystem.spacingMd),
-
-        // TODO: Trimming controls (marked as complex feature)
-        // For now, just show a placeholder button
-        OutlinedButton.icon(
-          onPressed: null, // TODO: Implement trimming UI
-          icon: const Icon(Icons.content_cut),
-          label: const Text('Trim Video (TODO)'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppDesignSystem.textDisabled,
-            side: BorderSide(color: AppDesignSystem.dividerLight),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppDesignSystem.spacingMd),
-
-        // Upload button
-        ElevatedButton(
-          onPressed: state.canUpload && !_isBusy(state) ? _handleUpload : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppDesignSystem.accentBlue,
-            foregroundColor: AppDesignSystem.backgroundDark,
-            disabledBackgroundColor: AppDesignSystem.textDisabled,
-            padding: const EdgeInsets.symmetric(
-              vertical: AppDesignSystem.spacingMd,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-            ),
-          ),
-          child: _isBusy(state)
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppDesignSystem.backgroundDark,
-                    ),
-                  ),
-                )
-              : Text(
-                  'Upload for Analysis',
-                  style: AppDesignSystem.tabStyle.copyWith(fontSize: 16),
-                ),
-        ),
-
-        // Status text
-        if (_isBusy(state)) ...[
-          const SizedBox(height: AppDesignSystem.spacingSm),
-          Text(
-            state.statusLabel,
-            textAlign: TextAlign.center,
-            style: AppDesignSystem.feedbackStyle.copyWith(
-              color: AppDesignSystem.textSecondary,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   Widget _buildEmptyVideoState() {
     return Center(
       child: Padding(
@@ -571,9 +384,9 @@ class _UploadPageState extends State<UploadPage> {
               color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
-            Text(
+            const Text(
               'No video selected',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppDesignSystem.textSecondary,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -591,184 +404,5 @@ class _UploadPageState extends State<UploadPage> {
         ),
       ),
     );
-  }
-
-  Widget _buildTimestampsList(UploadState state) {
-    return Column(
-      children: [
-        // Header with add button
-        Container(
-          padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Dance Steps',
-                      style: TextStyle(
-                        color: AppDesignSystem.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppDesignSystem.spacingXs),
-                    Text(
-                      state.timestamps.isEmpty
-                          ? 'No timestamps added'
-                          : '${state.timestamps.length} timestamp${state.timestamps.length == 1 ? '' : 's'}',
-                      style: AppDesignSystem.feedbackStyle.copyWith(
-                        color: AppDesignSystem.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed:
-                    state.isAddingTimestamp || state.editingTimestampId != null
-                    ? null
-                    : () => _controller.startAddingTimestamp(),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppDesignSystem.accentBlue,
-                  foregroundColor: AppDesignSystem.backgroundDark,
-                  disabledBackgroundColor: AppDesignSystem.textDisabled,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.spacingMd,
-                    vertical: AppDesignSystem.spacingSm,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDesignSystem.radiusXs,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Timestamp list or empty state
-        Expanded(
-          child: state.timestamps.isEmpty && !state.isAddingTimestamp
-              ? _buildEmptyTimestampsState()
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.spacingMd,
-                    vertical: AppDesignSystem.spacingMd,
-                  ),
-                  itemCount:
-                      state.timestamps.length +
-                      (state.isAddingTimestamp ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    // Show inline add form at the end if adding
-                    if (state.isAddingTimestamp &&
-                        index == state.timestamps.length) {
-                      return InlineTimestampForm(
-                        currentVideoPosition: _currentVideoPosition,
-                        onSave: (startTime, endTime, label) {
-                          _controller.addTimestamp(startTime, endTime, label);
-                        },
-                        onCancel: _controller.cancelTimestampForm,
-                        maxDuration: state.video?.duration,
-                      );
-                    }
-
-                    final timestamp = state.timestamps[index];
-                    final isEditing = state.editingTimestampId == timestamp.id;
-
-                    return TimestampListItem(
-                      timestamp: timestamp,
-                      onTap: () => _seekToTimestamp(timestamp.startTime),
-                      onEdit: () =>
-                          _controller.startEditingTimestamp(timestamp.id),
-                      onDelete: () => _controller.removeTimestamp(timestamp.id),
-                      isEditing: isEditing,
-                      editForm: isEditing
-                          ? InlineTimestampForm(
-                              currentVideoPosition: _currentVideoPosition,
-                              existingTimestamp: timestamp,
-                              onSave: (startTime, endTime, label) {
-                                _controller.updateTimestamp(
-                                  timestamp.id,
-                                  startTime: startTime,
-                                  endTime: endTime,
-                                  label: label,
-                                );
-                              },
-                              onCancel: _controller.cancelTimestampForm,
-                              maxDuration: state.video?.duration,
-                            )
-                          : null,
-                    );
-                  },
-                ),
-        ),
-
-        // Info text
-        Container(
-          padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-          child: Text(
-            state.timestamps.isEmpty
-                ? 'Timestamps help mark different dance steps in longer videos for better analysis.'
-                : 'Tap a timestamp to seek the video. Edit or delete as needed.',
-            textAlign: TextAlign.center,
-            style: AppDesignSystem.smallTextStyle.copyWith(
-              color: AppDesignSystem.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyTimestampsState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.bookmark_border,
-              size: 48,
-              color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: AppDesignSystem.spacingMd),
-            Text(
-              'No timestamps yet',
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppDesignSystem.spacingSm),
-            Text(
-              'Add timestamps to mark different\ndance steps or routine segments',
-              textAlign: TextAlign.center,
-              style: AppDesignSystem.smallTextStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _isBusy(UploadState state) {
-    return switch (state.status) {
-      UploadStatus.uploading || UploadStatus.processing => true,
-      _ => false,
-    };
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds.remainder(60);
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }
