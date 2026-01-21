@@ -1,3 +1,4 @@
+import 'package:dance_analysis_client/ui/upload_page.dart';
 import 'package:flutter/material.dart';
 import 'design_system.dart';
 import 'demo_results_page.dart';
@@ -37,7 +38,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       case 0:
         return const _HomePageContent();
       case 1:
-        return const _StubPageContent(title: 'Upload');
+        return const UploadPage();
       case 2:
         return const _StubPageContent(title: 'History');
       case 3:
