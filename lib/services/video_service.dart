@@ -4,20 +4,29 @@ import 'package:image_picker/image_picker.dart';
 import '../state/upload_state.dart';
 import 'video_service_io.dart' if (dart.library.html) 'video_service_web.dart';
 
+/// Centralized video validation configuration
+class VideoConfig {
+  VideoConfig._();
+
+  /// Maximum duration we accept for a clip (20 seconds)
+  static const Duration maxDuration = Duration(seconds: 20);
+
+  /// Maximum allowed file size in bytes (100 MB)
+  static const int maxSizeBytes = 100 * 1024 * 1024;
+
+  /// Maximum size in megabytes for error messages
+  static const double maxSizeMB = 100.0;
+
+  /// Recommended duration for single-step analysis (15 seconds)
+  static const Duration recommendedStepDuration = Duration(seconds: 15);
+}
+
 /// Service responsible for interacting with the device camera/gallery
 /// and enforcing basic video validation rules.
 class VideoService {
   VideoService({ImagePicker? picker}) : _picker = picker ?? ImagePicker();
 
   final ImagePicker _picker;
-
-  /// Maximum duration we accept for a clip.
-  static const Duration maxDuration = Duration(seconds: 20);
-
-  /// Maximum allowed file size in bytes (e.g. ~50MB).
-  ///
-  /// TODO: Make this configurable via a remote config or build-time flag.
-  static const int maxSizeBytes = 100 * 1024 * 1024;
 
   /// Pick or record a video from the given [source] and validate it.
   ///
@@ -34,7 +43,7 @@ class VideoService {
     // Limit recorded clips to the desired max duration at the capture level (mobile only)
     final XFile? picked = await _picker.pickVideo(
       source: source,
-      maxDuration: kIsWeb ? null : maxDuration,
+      maxDuration: kIsWeb ? null : VideoConfig.maxDuration,
     );
 
     if (picked == null) {
@@ -44,14 +53,18 @@ class VideoService {
 
     // Validate file size
     final size = await picked.length();
-    if (size > maxSizeBytes) {
-      throw const VideoValidationException('Video file is too large (max 50MB).');
+    if (size > VideoConfig.maxSizeBytes) {
+      throw VideoValidationException(
+        'Video file is too large (max ${VideoConfig.maxSizeMB.toStringAsFixed(0)}MB).',
+      );
     }
 
     // Read duration - use platform-specific implementation
     final duration = await readVideoDuration(picked);
-    if (duration > maxDuration) {
-      throw const VideoValidationException('Video is longer than 20 seconds.');
+    if (duration > VideoConfig.maxDuration) {
+      throw VideoValidationException(
+        'Video is longer than ${VideoConfig.maxDuration.inSeconds} seconds.',
+      );
     }
 
     return SelectedVideo(

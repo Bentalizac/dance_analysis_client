@@ -65,7 +65,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final paint = Paint()
-      ..color = AppDesignSystem.accentBlue.withOpacity(0.6)
+      ..color = AppDesignSystem.accentBlue.withValues(alpha: 0.6)
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
@@ -125,7 +125,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final highlightPaint = Paint()
-      ..color = highlightColor.withOpacity(0.3)
+      ..color = highlightColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     final outlinePaint = Paint()

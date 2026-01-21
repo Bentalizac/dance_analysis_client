@@ -51,7 +51,7 @@ class VideoPlaceholder extends StatelessWidget {
             child: Icon(
               icon,
               size: 48,
-              color: AppDesignSystem.textSecondary.withOpacity(0.6),
+              color: AppDesignSystem.textSecondary.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: AppDesignSystem.spacingMd),

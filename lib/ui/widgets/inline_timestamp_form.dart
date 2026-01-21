@@ -174,7 +174,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
         color: AppDesignSystem.backgroundDark,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         border: Border.all(
-          color: AppDesignSystem.accentBlue.withOpacity(0.3),
+          color: AppDesignSystem.accentBlue.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -242,13 +242,13 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
             const SizedBox(height: AppDesignSystem.spacingSm),
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingSm),
-              decoration: BoxDecoration(
-                color: AppDesignSystem.errorRed.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-                border: Border.all(
-                  color: AppDesignSystem.errorRed.withOpacity(0.3),
-                ),
+            decoration: BoxDecoration(
+              color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+              border: Border.all(
+                color: AppDesignSystem.errorRed.withValues(alpha: 0.3),
               ),
+            ),
               child: Row(
                 children: [
                   const Icon(
@@ -286,7 +286,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
             decoration: InputDecoration(
               hintText: 'e.g., Pirouette, Grand Jeté',
               hintStyle: TextStyle(
-                color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
               ),
               filled: true,
               fillColor: AppDesignSystem.backgroundMedium,
@@ -380,7 +380,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 decoration: InputDecoration(
                   hintText: '0',
                   hintStyle: TextStyle(
-                    color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                    color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
                   ),
                   filled: true,
                   fillColor: AppDesignSystem.backgroundMedium,
@@ -423,7 +423,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 decoration: InputDecoration(
                   hintText: '00',
                   hintStyle: TextStyle(
-                    color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                    color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
                   ),
                   filled: true,
                   fillColor: AppDesignSystem.backgroundMedium,

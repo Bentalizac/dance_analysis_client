@@ -247,7 +247,7 @@ class _UploadPageState extends State<UploadPage> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
         ),
       ),
       child: Row(
@@ -316,7 +316,7 @@ class _UploadPageState extends State<UploadPage> {
                 ),
                 hintText: 'you@example.com',
                 hintStyle: TextStyle(
-                  color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                  color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
                 ),
                 errorText: state.email.isEmpty || state.isEmailValid
                     ? null
@@ -344,10 +344,10 @@ class _UploadPageState extends State<UploadPage> {
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
               decoration: BoxDecoration(
-                color: AppDesignSystem.errorRed.withOpacity(0.1),
+                color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
                 border: Border.all(
-                  color: AppDesignSystem.errorRed.withOpacity(0.3),
+                  color: AppDesignSystem.errorRed.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -568,7 +568,7 @@ class _UploadPageState extends State<UploadPage> {
             Icon(
               Icons.video_library_outlined,
               size: 64,
-              color: AppDesignSystem.textSecondary.withOpacity(0.5),
+              color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
@@ -736,7 +736,7 @@ class _UploadPageState extends State<UploadPage> {
             Icon(
               Icons.bookmark_border,
               size: 48,
-              color: AppDesignSystem.textSecondary.withOpacity(0.5),
+              color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
@@ -769,6 +769,6 @@ class _UploadPageState extends State<UploadPage> {
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds.remainder(60);
-    return '${minutes}:${seconds.toString().padLeft(2, '0')}';
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }

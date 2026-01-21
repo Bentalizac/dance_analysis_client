@@ -24,8 +24,8 @@ class AppDesignSystem {
   static const Color textOnLight = Colors.black;
 
   /// Border and divider colors
-  static Color dividerLight = Colors.white.withOpacity(0.14);
-  static Color dividerError = const Color(0xFFDE3737).withOpacity(0.14);
+  static Color dividerLight = Colors.white.withValues(alpha: 0.14);
+  static Color dividerError = const Color(0xFFDE3737).withValues(alpha: 0.14);
 
   // ===== TYPOGRAPHY =====
 
@@ -98,7 +98,6 @@ class AppDesignSystem {
         secondary: accentBlue,
         error: errorRed,
         surface: backgroundMedium,
-        background: backgroundDark,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: backgroundDark,

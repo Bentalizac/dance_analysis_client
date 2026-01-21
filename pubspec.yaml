@@ -37,9 +37,9 @@ dependencies:
   file_picker: ^10.3.8
 
   # Networking and video handling for the upload MVP.
-  http: any # TODO: Pin to a specific version for production.
-  image_picker: any # TODO: Configure platform-specific permissions.
-  video_player: any # Used only for reading video duration metadata.
+  http: ^1.6.0
+  image_picker: ^1.2.1
+  video_player: ^2.10.1
   web: ^1.1.0 # For web platform support.
 
 dev_dependencies:

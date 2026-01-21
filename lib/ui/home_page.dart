@@ -116,7 +116,7 @@ class HomePage extends StatelessWidget {
                     ),
                   );
                 },
-                color: AppDesignSystem.accentBlue.withOpacity(0.2),
+                color: AppDesignSystem.accentBlue.withValues(alpha: 0.2),
               ),
             ],
           ),
@@ -220,7 +220,7 @@ class _StubPage extends StatelessWidget {
               Icon(
                 Icons.construction,
                 size: 64,
-                color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),
               Text(

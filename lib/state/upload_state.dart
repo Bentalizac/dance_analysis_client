@@ -2,6 +2,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/video_metadata.dart';
 import '../models/video_timestamp.dart';
+import '../services/video_service.dart';
 
 /// High-level status values exposed to the UI.
 ///
@@ -117,7 +118,7 @@ class UploadState {
 
   /// Whether the video exceeds recommended length for single-step analysis
   bool get exceedsRecommendedLength =>
-      video != null && effectiveDuration > const Duration(seconds: 15);
+      video != null && effectiveDuration > VideoConfig.recommendedStepDuration;
 
   /// Whether timestamps are recommended (video is longer than 15 seconds)
   bool get shouldRecommendTimestamps =>

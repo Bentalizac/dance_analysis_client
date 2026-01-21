@@ -1,3 +1,5 @@
+import 'feedback_item.dart';
+
 /// Represents pose skeleton data for a specific frame/timestamp
 class PoseData {
   const PoseData({
@@ -142,7 +144,7 @@ class AnalysisResult {
   });
 
   /// List of timestamped feedback
-  final List<dynamic> feedbackItems; // Will be List<FeedbackItem> when imported
+  final List<FeedbackItem> feedbackItems;
 
   /// Pose data for each frame/timestamp
   final List<PoseData> poseData;
@@ -152,7 +154,11 @@ class AnalysisResult {
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
-      feedbackItems: json['feedback_items'] as List? ?? [],
+      feedbackItems:
+          (json['feedback_items'] as List?)
+              ?.map((f) => FeedbackItem.fromJson(f as Map<String, dynamic>))
+              .toList() ??
+          [],
       poseData:
           (json['pose_data'] as List?)
               ?.map((p) => PoseData.fromJson(p as Map<String, dynamic>))
@@ -164,7 +170,7 @@ class AnalysisResult {
 
   Map<String, dynamic> toJson() {
     return {
-      'feedback_items': feedbackItems,
+      'feedback_items': feedbackItems.map((f) => f.toJson()).toList(),
       'pose_data': poseData.map((p) => p.toJson()).toList(),
       'video_path': videoPath,
     };

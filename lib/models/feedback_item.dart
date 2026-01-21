@@ -32,6 +32,27 @@ class FeedbackItem {
 
     return Duration(minutes: minutes, seconds: seconds);
   }
+
+  /// Convert to JSON for serialization
+  Map<String, dynamic> toJson() {
+    return {
+      'timestamp': timestamp,
+      'type': type.name,
+      'feedback': feedback,
+    };
+  }
+
+  /// Create from JSON
+  factory FeedbackItem.fromJson(Map<String, dynamic> json) {
+    return FeedbackItem(
+      timestamp: json['timestamp'] as String,
+      type: FeedbackType.values.firstWhere(
+        (t) => t.name == json['type'],
+        orElse: () => FeedbackType.negative,
+      ),
+      feedback: json['feedback'] as String?,
+    );
+  }
 }
 
 /// Type of feedback: positive (good form) or negative (needs improvement)

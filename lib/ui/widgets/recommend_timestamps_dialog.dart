@@ -11,7 +11,7 @@ class RecommendTimestampsDialog extends StatelessWidget {
   String get _formattedDuration {
     final minutes = videoDuration.inMinutes;
     final seconds = videoDuration.inSeconds.remainder(60);
-    return '${minutes}:${seconds.toString().padLeft(2, '0')}';
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -49,7 +49,7 @@ class RecommendTimestampsDialog extends StatelessWidget {
               color: AppDesignSystem.backgroundDark,
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
               border: Border.all(
-                color: AppDesignSystem.accentBlue.withOpacity(0.3),
+                color: AppDesignSystem.accentBlue.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),

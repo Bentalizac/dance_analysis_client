@@ -295,7 +295,7 @@ class _StubPageContent extends StatelessWidget {
               Icon(
                 Icons.construction,
                 size: 64,
-                color: AppDesignSystem.textSecondary.withOpacity(0.5),
+                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),
               Text(
