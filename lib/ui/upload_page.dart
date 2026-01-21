@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
-import '../models/video_timestamp.dart';
 import '../services/api_client.dart';
 import '../services/video_service.dart';
 import '../state/upload_controller.dart';
