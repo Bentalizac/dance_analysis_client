@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'ui/upload_page.dart';
+import 'ui/design_system.dart';
+import 'ui/main_scaffold.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,11 +18,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Dance Coaching Upload',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const UploadPage(),
+      theme: AppDesignSystem.darkTheme,
+      home: const MainScaffold(),
     );
   }
 }

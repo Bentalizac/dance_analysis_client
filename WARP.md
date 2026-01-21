@@ -9,6 +9,7 @@ This is a Flutter MVP client for uploading dance practice videos. The app allows
 ## Common Commands
 
 ### Development
+
 ```bash
 # Run the app with backend API URL configured
 flutter run --dart-define=ANALYZE_API_URL=http://your-backend-url/analyze
@@ -19,6 +20,7 @@ flutter run -d macos --dart-define=ANALYZE_API_URL=http://localhost:8080/analyze
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 flutter test
@@ -28,6 +30,7 @@ flutter test test/widget_test.dart
 ```
 
 ### Code Quality
+
 ```bash
 # Run static analysis
 flutter analyze
@@ -37,6 +40,7 @@ flutter format lib/ test/
 ```
 
 ### Build
+
 ```bash
 # Build for production (requires ANALYZE_API_URL)
 flutter build apk --dart-define=ANALYZE_API_URL=https://prod-api.example.com/analyze
@@ -45,6 +49,7 @@ flutter build web --dart-define=ANALYZE_API_URL=https://prod-api.example.com/ana
 ```
 
 ### Dependencies
+
 ```bash
 # Install dependencies
 flutter pub get
@@ -63,19 +68,36 @@ flutter pub outdated
 The codebase follows a layered architecture with clear separation of concerns:
 
 **UI Layer** (`lib/ui/`)
+
 - `upload_page.dart`: Single-screen UI for the MVP upload flow
+- `results_page.dart`: Displays analysis results with timestamped feedback
+- `demo_results_page.dart`: Demo/preview page showing sample feedback data
+- `design_system.dart`: Centralized design tokens (colors, typography, spacing) extracted from Figma
+- `widgets/`: Reusable UI components (feedback list items, video player with pose overlay, pose skeleton painter)
 - Uses `AnimatedBuilder` to react to state changes from the controller
 - Platform-aware: shows different UI options for web vs mobile (camera recording not supported on web)
 
 **State Management** (`lib/state/`)
+
 - `upload_controller.dart`: ChangeNotifier that coordinates UI events, validation, and service calls. Contains no widget code for testability.
 - `upload_state.dart`: Immutable state snapshots with `UploadStatus` enum driving UI behavior
 - State is copied immutably using `copyWith()` pattern
 
 **Services Layer** (`lib/services/`)
+
 - `video_service.dart`: Handles video selection/recording via ImagePicker and enforces validation rules (max 20s duration, max 100MB size)
 - `video_service_io.dart` / `video_service_web.dart`: Platform-specific implementations for reading video duration using conditional imports
 - `api_client.dart`: HTTP client for uploading videos to the backend `/analyze` endpoint using multipart requests
+
+**Models Layer** (`lib/models/`)
+
+- `feedback_item.dart`: Represents timestamped feedback with positive/negative type indicators
+- `pose_data.dart`: Pose skeleton data with keypoints, connections, and JSON serialization for backend integration
+- `AnalysisResult`: Complete backend response structure (feedback + pose data)
+
+**Documentation** (`docs`)
+
+- Write ups for features go in the /docs folder in the project root, except for the main README.md and WARP.md.
 
 ### Key Architectural Patterns
 
@@ -109,10 +131,74 @@ User Action → UploadController → Service (VideoService/ApiClient)
 - **Web Limitations**: Camera recording disabled on web (only file upload supported)
 - **Network Timeout**: API requests timeout after 30 seconds
 - **MVP Scope**: Backend response body is intentionally ignored; all intelligence is server-side
+- **Pose Data Sync**: Video player syncs pose overlay within 100ms threshold of current timestamp
+
+### Design System
+
+The app uses a centralized design system (`lib/ui/design_system.dart`) with:
+
+- **Color Palette**: Dark theme with accent blue (#A5D0F7) and error red (#DE3737)
+- **Typography**: Consistent font sizes (16pt timestamps, 14pt feedback/tabs, 12pt small text)
+- **Spacing Scale**: XS (4px), SM (8px), MD (16px), LG (22px), XL (31px)
+- **Border Radius**: Standardized radii from 7px (XS) to 100px (pill shapes)
+- **Shadows**: Subtle card shadows for depth
+
+All design tokens are extracted from Figma designs to ensure UI consistency.
+
+### Custom Painters
+
+The pose overlay system uses Flutter's `CustomPainter` API:
+
+- `PoseOverlayPainter`: Draws skeleton connections and keypoint circles over video
+- Supports highlighting specific keypoints (e.g., for feedback visualization)
+- Automatically scales coordinates from video space to widget space
+- Optimized with `shouldRepaint` to minimize redraws
+
+## Code Quality Notes
+
+### Known Issues
+
+1. **Deprecation Warnings** (5 total):
+   - `Color.withOpacity()` should be replaced with `Color.withValues(alpha: ...)`
+   - `ColorScheme.background` should be replaced with `ColorScheme.surface`
+   - Run `flutter analyze` to see specific locations
+
+2. **Unpinned Dependencies**:
+   - `http`, `image_picker`, and `video_player` use `any` version
+   - Should be pinned to specific versions before production deployment
+
+3. **Test Coverage**:
+   - Only placeholder widget test exists
+   - Need unit tests for controllers, services, and models
+   - Need widget tests for key UI components
+
+4. **Type Safety**:
+   - `AnalysisResult.feedbackItems` uses `List<dynamic>` instead of `List<FeedbackItem>`
+   - Should be fixed to maintain strong typing
+
+### Extensibility Strengths
+
+- **Dependency Injection**: Controllers accept services via constructor for easy testing/mocking
+- **Platform Abstraction**: Clean separation between IO and web implementations
+- **Design System**: Centralized theming makes visual updates straightforward
+- **State Immutability**: `copyWith()` pattern makes state changes predictable
+- **Custom Exceptions**: `VideoValidationException` and `ApiException` provide clear error categorization
+
+### Recommended Improvements for Production
+
+1. Add analytics/crash reporting layer (Firebase Crashlytics, Sentry)
+2. Create configuration abstraction for environment-specific values
+3. Add proper logging with structured log levels
+4. Implement retry logic for network requests
+5. Add internationalization (i18n) support
+6. Configure platform-specific permissions in manifests
+7. Add accessibility labels for screen readers
+8. Consider state persistence for offline support
+
+See `CODE_QUALITY_ASSESSMENT.md` for detailed analysis.
 
 ## Development Notes
 
 - The project name in some files is still "learning" (legacy from template) but the actual package name is `dance_analysis_client`
-- Dependencies like `http`, `image_picker`, and `video_player` are not pinned to specific versions (marked with TODOs for production)
+- `main.dart` currently shows `DemoResultsPage` by default; uncomment `UploadPage` import to switch to upload flow
 - Platform-specific permissions for camera/gallery access need to be configured in Android/iOS manifests for production use
-- The default widget test is a placeholder and should be replaced with actual tests for the upload flow
