@@ -17,6 +17,17 @@ import 'upload_state.dart';
 /// - Upload coordination with metadata
 ///
 /// Keeping this free of widget code makes it easy to test and reuse.
+///
+/// TODO: Add local persistence to save upload progress
+/// This would prevent users from losing timestamps/trimming if they:
+/// - Close the app mid-upload
+/// - Switch to another app and iOS kills the process
+/// - Navigate away accidentally
+/// Implementation would use shared_preferences to serialize state (video path,
+/// email, timestamps, trim times) and restore on app launch. Need to handle:
+/// - Video file moved/deleted (graceful failure)
+/// - App updates/schema changes
+/// - Storage quota limits
 class UploadController extends ChangeNotifier {
   UploadController({
     required VideoService videoService,
@@ -233,6 +244,20 @@ class UploadController extends ChangeNotifier {
   /// Reset trimming to use the full video
   void resetTrimming() {
     _state = _state.copyWith(trimStart: Duration.zero, clearTrimEnd: true);
+    notifyListeners();
+  }
+
+  /// Clear the currently selected video and reset state
+  void clearVideo() {
+    _state = _state.copyWith(
+      clearVideo: true,
+      clearVideoMetadata: true,
+      status: UploadStatus.idle,
+      timestamps: [],
+      trimStart: Duration.zero,
+      clearTrimEnd: true,
+      clearError: true,
+    );
     notifyListeners();
   }
 

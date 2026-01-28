@@ -10,7 +10,10 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignSystem.backgroundDark,
-      appBar: AppBar(title: const Text('Dance Coach'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Dance Coach'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDesignSystem.spacingMd),

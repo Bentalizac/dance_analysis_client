@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'services/api_client.dart';
-import 'services/video_service.dart';
-import 'ui/design_system.dart';
-import 'ui/main_scaffold.dart';
+import 'config/routes.dart';
+import 'shared/design_system/theme.dart';
+import 'shared/services/api_client.dart';
+import 'shared/services/video_service.dart';
 
 void main() {
   // Set up global error handling
@@ -118,11 +118,11 @@ class MyApp extends StatelessWidget {
           create: (_) => ApiClient(),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Dance Coaching Upload',
         debugShowCheckedModeBanner: false,
         theme: AppDesignSystem.darkTheme,
-        home: const MainScaffold(),
+        routerConfig: appRouter,
         // Custom error widget for better UX
         builder: (context, child) {
           ErrorWidget.builder = (FlutterErrorDetails details) {

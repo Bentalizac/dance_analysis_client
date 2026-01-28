@@ -11,10 +11,10 @@ import '../services/video_service.dart';
 import '../state/upload_controller.dart';
 import '../state/upload_state.dart';
 import 'design_system.dart';
+import 'widgets/discard_confirmation_dialog.dart';
 import 'widgets/recommend_timestamps_dialog.dart';
 import 'widgets/timestamp_manager.dart';
 import 'widgets/video_info_card.dart';
-import 'widgets/video_placeholder.dart';
 import 'widgets/video_player_widget.dart';
 import 'widgets/video_selection_buttons.dart';
 
@@ -25,6 +25,9 @@ import 'widgets/video_selection_buttons.dart';
 /// - Header section with upload info and actions
 /// - Timestamp/step list below (similar to feedback list)
 /// - Trimming controls (marked as TODO for complex implementation)
+///
+/// Implements navigation guard to show confirmation dialog when user has
+/// timestamps that would be lost by navigating away.
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
 
@@ -184,15 +187,46 @@ class _UploadPageState extends State<UploadPage> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  Future<bool> _confirmDiscard() async {
+    final state = _controller.state;
+    
+    // Only show confirmation if there are timestamps to lose
+    if (state.timestamps.isEmpty) {
+      return true;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => DiscardConfirmationDialog(
+        timestampCount: state.timestamps.length,
+      ),
+    );
+
+    return result ?? false; // Default to false if dialog dismissed
+  }
+
+  Future<void> _handleRemoveVideo() async {
+    final shouldDiscard = await _confirmDiscard();
+    if (shouldDiscard) {
+      _controller.clearVideo();
+    }
+  }
+
+  /// Called by MainScaffold to check if navigation away should be blocked.
+  ///
+  /// Returns true if navigation is allowed, false if blocked.
+  /// Public so MainScaffold can call it via GlobalKey.
+  Future<bool> canNavigateAway() async {
+    return await _confirmDiscard();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppDesignSystem.backgroundDark,
       appBar: AppBar(
         title: const Text('Upload Practice Video'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        centerTitle: true,
       ),
       body: AnimatedBuilder(
         animation: _controller,
@@ -202,16 +236,14 @@ class _UploadPageState extends State<UploadPage> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Video player or placeholder
+                  // Video player (only shown when video is selected and initialized)
                   if (state.hasVideo && _isVideoPlayerInitialized)
                     VideoPlayerWidget(
                       controller: _videoPlayerController!,
                       maxHeight: MediaQuery.of(context).size.height * 0.4,
                     )
                   else if (state.hasVideo)
-                    _buildVideoLoadingPlaceholder()
-                  else
-                    const VideoPlaceholder(),
+                    _buildVideoLoadingPlaceholder(),
 
                   // Header section with actions
                   _buildHeaderSection(state),
@@ -308,13 +340,15 @@ class _UploadPageState extends State<UploadPage> {
             const SizedBox(height: AppDesignSystem.spacingMd),
           ],
 
-          // Video selection buttons or video info
-          if (!state.hasVideo)
+          // Video selection buttons (shown prominently when no video)
+          if (!state.hasVideo) ...[
+            const SizedBox(height: AppDesignSystem.spacingXl),
             VideoSelectionButtons(
               onVideoSelected: _controller.pickVideo,
               isBusy: _isBusy(state),
-            )
-          else
+            ),
+            const SizedBox(height: AppDesignSystem.spacingXl),
+          ] else
             VideoInfoCard(
               durationSeconds: state.effectiveDuration.inSeconds,
               sizeMb: state.video!.sizeBytes / (1024 * 1024),
@@ -327,11 +361,7 @@ class _UploadPageState extends State<UploadPage> {
               isBusy: _isBusy(state),
               statusLabel: state.statusLabel,
               onUpload: _handleUpload,
-              onRemove: () {
-                setState(() {
-                  _controller.pickVideo(ImageSource.gallery);
-                });
-              },
+              onRemove: _handleRemoveVideo,
             ),
 
           // Error message

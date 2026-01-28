@@ -1,10 +1,18 @@
-import 'package:dance_analysis_client/ui/upload_page.dart';
 import 'package:flutter/material.dart';
-import 'design_system.dart';
-import 'demo_results_page.dart';
 
-/// Main scaffold wrapper with bottom navigation bar
-/// Provides consistent navigation across all main pages
+import 'design_system.dart';
+import 'home_page.dart';
+import 'stub_pages.dart';
+import 'upload_page.dart';
+
+/// Main scaffold wrapper with bottom navigation bar.
+///
+/// Uses IndexedStack to maintain page state when switching between tabs.
+/// This ensures:
+/// - Each page gets proper lifecycle events (initState/dispose)
+/// - State is preserved when switching tabs (e.g., video player position)
+/// - PopScope works correctly for navigation guards
+/// - Memory management is handled by Flutter's widget lifecycle
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key, this.initialIndex = 0});
 
@@ -18,39 +26,41 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   late int _currentIndex;
 
+  // Pages are instantiated once and reused to preserve state
+  late final List<Widget> _pages;
+  
+  // GlobalKeys to access page state for navigation guards
+  final _uploadPageKey = GlobalKey<_UploadPageState>();
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _pages = [
+      const HomePage(),
+      UploadPage(key: _uploadPageKey),
+      const StubPage(title: 'History', icon: Icons.history),
+      const StubPage(title: 'Profile', icon: Icons.person),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignSystem.backgroundDark,
-      body: _getPage(_currentIndex),
+      // IndexedStack shows only the selected page but keeps all pages in the widget tree
+      // This preserves state when switching tabs (e.g., video player state, scroll position)
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _getPage(int index) {
-    switch (index) {
-      case 0:
-        return const _HomePageContent();
-      case 1:
-        return const UploadPage();
-      case 2:
-        return const _StubPageContent(title: 'History');
-      case 3:
-        return const _StubPageContent(title: 'Profile');
-      default:
-        return const _HomePageContent();
-    }
-  }
-
   Widget _buildBottomNavigationBar() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppDesignSystem.backgroundMedium,
         border: Border(
           top: BorderSide(color: AppDesignSystem.dividerLight, width: 1),
@@ -59,11 +69,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       child: SafeArea(
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
+          onTap: _onTabTapped,
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppDesignSystem.backgroundMedium,
           selectedItemColor: AppDesignSystem.accentBlue,
@@ -97,226 +103,31 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
     );
   }
-}
 
-/// Home page content without its own Scaffold
-class _HomePageContent extends StatelessWidget {
-  const _HomePageContent();
+  /// Handle bottom navigation bar taps with navigation guards.
+  ///
+  /// Checks if the current page allows navigation (e.g., UploadPage may show
+  /// a confirmation dialog if there are unsaved timestamps).
+  Future<void> _onTabTapped(int index) async {
+    if (index == _currentIndex) {
+      // Tapping the same tab - could scroll to top or refresh
+      return;
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // App title
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingMd,
-              ),
-              child: Text(
-                'Dance Coach',
-                style: TextStyle(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
+    // Check if current page wants to block navigation
+    // Currently only UploadPage (index 1) has navigation guards
+    if (_currentIndex == 1) {
+      final uploadState = _uploadPageKey.currentState;
+      if (uploadState != null) {
+        final canNavigate = await uploadState.canNavigateAway();
+        if (!canNavigate) {
+          return; // User cancelled navigation
+        }
+      }
+    }
 
-            // Welcome section
-            Container(
-              padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
-              decoration: BoxDecoration(
-                color: AppDesignSystem.backgroundMedium,
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.school,
-                    size: 64,
-                    color: AppDesignSystem.accentBlue,
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingMd),
-                  Text(
-                    'Welcome to Dance Coach',
-                    style: TextStyle(
-                      color: AppDesignSystem.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingSm),
-                  Text(
-                    'AI-powered dance analysis and coaching',
-                    style: AppDesignSystem.feedbackStyle.copyWith(
-                      color: AppDesignSystem.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppDesignSystem.spacingLg),
-
-            // Quick actions
-            Text(
-              'Quick Actions',
-              style: AppDesignSystem.timestampStyle.copyWith(
-                color: AppDesignSystem.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppDesignSystem.spacingMd),
-
-            _buildActionCard(
-              context: context,
-              icon: Icons.science,
-              title: 'View Demo',
-              subtitle: 'See sample analysis results',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DemoResultsPage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppDesignSystem.spacingMd),
-
-            _buildActionCard(
-              context: context,
-              icon: Icons.video_library,
-              title: 'Recent Videos',
-              subtitle: 'Coming soon',
-              onTap: null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-      child: Container(
-        padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-        decoration: BoxDecoration(
-          color: AppDesignSystem.backgroundMedium,
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-          border: Border.all(color: AppDesignSystem.dividerLight, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-              decoration: BoxDecoration(
-                color: AppDesignSystem.backgroundDark,
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-              ),
-              child: Icon(
-                icon,
-                color: onTap != null
-                    ? AppDesignSystem.accentBlue
-                    : AppDesignSystem.textDisabled,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: AppDesignSystem.spacingMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppDesignSystem.timestampStyle.copyWith(
-                      color: AppDesignSystem.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingXs),
-                  Text(
-                    subtitle,
-                    style: AppDesignSystem.feedbackStyle.copyWith(
-                      color: AppDesignSystem.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (onTap != null)
-              Icon(
-                Icons.arrow_forward_ios,
-                color: AppDesignSystem.textSecondary,
-                size: 16,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Stub page content for features not yet implemented
-class _StubPageContent extends StatelessWidget {
-  const _StubPageContent({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(AppDesignSystem.spacingXl),
-          padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
-          decoration: BoxDecoration(
-            color: AppDesignSystem.backgroundMedium,
-            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-            border: Border.all(color: AppDesignSystem.dividerLight, width: 2),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.construction,
-                size: 64,
-                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: AppDesignSystem.spacingMd),
-              Text(
-                '$title Page',
-                style: TextStyle(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppDesignSystem.spacingSm),
-              Text(
-                'Coming soon',
-                style: AppDesignSystem.feedbackStyle.copyWith(
-                  color: AppDesignSystem.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    setState(() {
+      _currentIndex = index;
+    });
   }
 }
