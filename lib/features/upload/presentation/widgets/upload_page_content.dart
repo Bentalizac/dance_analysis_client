@@ -87,13 +87,18 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<UploadController>();
+    
     return PopScope(
-      canPop: false,
+      canPop: !controller.hasUnsavedWork,
       onPopInvoked: (didPop) async {
         if (didPop) return;
         
-        final canNavigate = await _handleNavigationAttempt(context);
-        if (canNavigate && context.mounted) {
+        // If we reach here, canPop was false, meaning there's unsaved work
+        final confirmed = await _handleNavigationAttempt(context);
+        if (confirmed && context.mounted) {
+          // Clear the work and pop
+          controller.clearVideo();
           Navigator.of(context).pop();
         }
       },
