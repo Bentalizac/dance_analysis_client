@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/timestamp_manager.dart';
 import '../controllers/upload_controller.dart';
 import '../controllers/upload_state.dart';
 import '../controllers/video_player_manager.dart';
@@ -108,6 +109,12 @@ class _UploadPageContentState extends State<UploadPageContent> {
                   if (state.hasVideo) _buildVideoPreviewSection(state),
 
                   const SizedBox(height: AppDesignSystem.spacingLg),
+
+                  // Timestamp management section (only show when video is loaded)
+                  if (state.hasVideo) ..[
+                    _buildTimestampSection(controller, state),
+                    const SizedBox(height: AppDesignSystem.spacingLg),
+                  ],
 
                   // Email input
                   _buildEmailInput(state),
@@ -340,6 +347,45 @@ class _UploadPageContentState extends State<UploadPageContent> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTimestampSection(UploadController controller, UploadState state) {
+    return Consumer<VideoPlayerManager>(
+      builder: (context, playerManager, _) {
+        return Container(
+          height: 300,
+          decoration: BoxDecoration(
+            color: AppDesignSystem.backgroundMedium,
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
+          ),
+          child: TimestampManager(
+            timestamps: state.timestamps,
+            isAddingTimestamp: state.isAddingTimestamp,
+            editingTimestampId: state.editingTimestampId,
+            currentVideoPosition: playerManager.position,
+            maxDuration: state.video?.duration,
+            onAddTimestamp: controller.startAddingTimestamp,
+            onSaveTimestamp: (start, end, label) {
+              controller.addTimestamp(start, end, label);
+            },
+            onEditTimestamp: controller.startEditingTimestamp,
+            onUpdateTimestamp: (id, start, end, label) {
+              controller.updateTimestamp(
+                id,
+                startTime: start,
+                endTime: end,
+                label: label,
+              );
+            },
+            onDeleteTimestamp: controller.removeTimestamp,
+            onSeekToTimestamp: (time) {
+              playerManager.seekTo(time);
+            },
+            onCancelForm: controller.cancelTimestampForm,
+          ),
+        );
+      },
     );
   }
 }
