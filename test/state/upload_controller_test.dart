@@ -1,8 +1,8 @@
-import 'package:dance_analysis_client/models/video_timestamp.dart';
-import 'package:dance_analysis_client/services/api_client.dart';
-import 'package:dance_analysis_client/services/video_service.dart';
-import 'package:dance_analysis_client/state/upload_controller.dart';
-import 'package:dance_analysis_client/state/upload_state.dart';
+import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
+import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
+import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
+import 'package:dance_analysis_client/shared/services/api_client.dart';
+import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mockito/annotations.dart';
@@ -11,18 +11,18 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoService, ApiClient])
+@GenerateMocks([VideoRepository, ApiClient])
 void main() {
   group('UploadController', () {
-    late MockVideoService mockVideoService;
+    late MockVideoRepository mockVideoRepository;
     late MockApiClient mockApiClient;
     late UploadController controller;
 
     setUp(() {
-      mockVideoService = MockVideoService();
+      mockVideoRepository = MockVideoRepository();
       mockApiClient = MockApiClient();
       controller = UploadController(
-        videoService: mockVideoService,
+        videoRepository: mockVideoRepository,
         apiClient: mockApiClient,
       );
     });
@@ -119,8 +119,7 @@ void main() {
     group('pickVideo', () {
       test('sets pickingVideo status while selecting', () async {
         // Setup mock to delay
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => null);
+        when(mockVideoRepository.pickVideo(any)).thenAnswer((_) async => null);
 
         final future = controller.pickVideo(ImageSource.gallery);
 
@@ -131,8 +130,7 @@ void main() {
       });
 
       test('returns to idle when user cancels', () async {
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => null);
+        when(mockVideoRepository.pickVideo(any)).thenAnswer((_) async => null);
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -147,8 +145,9 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -164,13 +163,17 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
 
         expect(controller.state.videoMetadata, isNotNull);
-        expect(controller.state.videoMetadata!.totalDuration, mockVideo.duration);
+        expect(
+          controller.state.videoMetadata!.totalDuration,
+          mockVideo.duration,
+        );
         expect(controller.state.videoMetadata!.originalPath, mockVideo.path);
       });
 
@@ -188,8 +191,9 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -197,8 +201,9 @@ void main() {
       });
 
       test('sets error status on validation exception', () async {
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenThrow(const VideoValidationException('Video too large'));
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenThrow(const VideoValidationException('Video too large'));
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -207,8 +212,9 @@ void main() {
       });
 
       test('handles unexpected exceptions', () async {
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenThrow(Exception('Unexpected error'));
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenThrow(Exception('Unexpected error'));
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -321,13 +327,13 @@ void main() {
 
           final id = controller.state.timestamps.first.id;
 
-          controller.updateTimestamp(
-            id,
-            label: 'Updated',
-          );
+          controller.updateTimestamp(id, label: 'Updated');
 
           expect(controller.state.timestamps.first.label, 'Updated');
-          expect(controller.state.timestamps.first.startTime, const Duration(seconds: 5));
+          expect(
+            controller.state.timestamps.first.startTime,
+            const Duration(seconds: 5),
+          );
         });
 
         test('maintains sort order after update', () {
@@ -373,7 +379,10 @@ void main() {
           );
 
           // Should not update
-          expect(controller.state.timestamps.first.startTime, originalStartTime);
+          expect(
+            controller.state.timestamps.first.startTime,
+            originalStartTime,
+          );
         });
 
         test('ignores non-existent id', () {
@@ -479,13 +488,15 @@ void main() {
       test('does not upload when canUpload is false', () async {
         await controller.upload();
 
-        verifyNever(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        ));
+        verifyNever(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        );
       });
 
       test('sets uploading status during upload', () async {
@@ -495,17 +506,20 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
-        when(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        )).thenAnswer((_) async => 'backend-ref');
+        when(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        ).thenAnswer((_) async => 'backend-ref');
 
         final future = controller.upload();
 
@@ -522,8 +536,9 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
         controller.addTimestamp(
@@ -532,23 +547,27 @@ void main() {
           'Step 1',
         );
 
-        when(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        )).thenAnswer((_) async => 'backend-ref');
+        when(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        ).thenAnswer((_) async => 'backend-ref');
 
         await controller.upload();
 
-        verify(mockApiClient.uploadVideo(
-          video: mockVideo,
-          email: 'test@example.com',
-          timestamps: controller.state.timestamps,
-          trimStart: Duration.zero,
-          trimEnd: null,
-        )).called(1);
+        verify(
+          mockApiClient.uploadVideo(
+            video: mockVideo,
+            email: 'test@example.com',
+            timestamps: controller.state.timestamps,
+            trimStart: Duration.zero,
+            trimEnd: null,
+          ),
+        ).called(1);
       });
 
       test('sets success status on successful upload', () async {
@@ -558,17 +577,20 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
-        when(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        )).thenAnswer((_) async => 'backend-ref');
+        when(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        ).thenAnswer((_) async => 'backend-ref');
 
         await controller.upload();
 
@@ -582,21 +604,27 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
-        when(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        )).thenAnswer((_) async => 'backend-ref-123');
+        when(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        ).thenAnswer((_) async => 'backend-ref-123');
 
         await controller.upload();
 
-        expect(controller.state.videoMetadata!.backendReference, 'backend-ref-123');
+        expect(
+          controller.state.videoMetadata!.backendReference,
+          'backend-ref-123',
+        );
         expect(controller.state.videoMetadata!.uploadedAt, isNotNull);
       });
 
@@ -607,17 +635,20 @@ void main() {
           sizeBytes: 1024 * 1024,
         );
 
-        when(mockVideoService.pickAndValidateVideo(any))
-            .thenAnswer((_) async => mockVideo);
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
-        when(mockApiClient.uploadVideo(
-          video: anyNamed('video'),
-          email: anyNamed('email'),
-          timestamps: anyNamed('timestamps'),
-          trimStart: anyNamed('trimStart'),
-          trimEnd: anyNamed('trimEnd'),
-        )).thenThrow(const ApiException('Upload failed'));
+        when(
+          mockApiClient.uploadVideo(
+            video: anyNamed('video'),
+            email: anyNamed('email'),
+            timestamps: anyNamed('timestamps'),
+            trimStart: anyNamed('trimStart'),
+            trimEnd: anyNamed('trimEnd'),
+          ),
+        ).thenThrow(const ApiException('Upload failed'));
 
         await controller.upload();
 

@@ -4,10 +4,11 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'services/api_client.dart';
-import 'services/video_service.dart';
-import 'ui/design_system.dart';
-import 'ui/main_scaffold.dart';
+import 'config/routes.dart';
+import 'features/upload/domain/repositories/video_repository.dart';
+import 'shared/design_system/theme.dart';
+import 'shared/services/api_client.dart';
+import 'shared/services/video_service.dart';
 
 void main() {
   // Set up global error handling
@@ -111,18 +112,19 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Provide services as singletons
-        Provider<VideoService>(
-          create: (_) => VideoService(),
-        ),
-        Provider<ApiClient>(
-          create: (_) => ApiClient(),
+        Provider<VideoService>(create: (_) => VideoService()),
+        Provider<ApiClient>(create: (_) => ApiClient()),
+        // Provide repositories
+        ProxyProvider<VideoService, VideoRepository>(
+          update: (context, videoService, previous) =>
+              VideoRepository(videoService),
         ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Dance Coaching Upload',
         debugShowCheckedModeBanner: false,
         theme: AppDesignSystem.darkTheme,
-        home: const MainScaffold(),
+        routerConfig: appRouter,
         // Custom error widget for better UX
         builder: (context, child) {
           ErrorWidget.builder = (FlutterErrorDetails details) {

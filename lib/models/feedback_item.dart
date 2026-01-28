@@ -35,11 +35,7 @@ class FeedbackItem {
 
   /// Convert to JSON for serialization
   Map<String, dynamic> toJson() {
-    return {
-      'timestamp': timestamp,
-      'type': type.name,
-      'feedback': feedback,
-    };
+    return {'timestamp': timestamp, 'type': type.name, 'feedback': feedback};
   }
 
   /// Create from JSON

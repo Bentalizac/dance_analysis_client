@@ -1,6 +1,6 @@
 import 'package:dance_analysis_client/models/video_timestamp.dart';
-import 'package:dance_analysis_client/ui/design_system.dart';
-import 'package:dance_analysis_client/ui/widgets/timestamp_list_item.dart';
+import 'package:dance_analysis_client/shared/design_system/theme.dart';
+import 'package:dance_analysis_client/shared/widgets/timestamp_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -63,16 +63,19 @@ void main() {
 
         // Verify divider container exists with correct decoration color
         final dividerContainer = find.byWidgetPredicate(
-          (widget) => widget is Container && 
-                     widget.decoration is BoxDecoration &&
-                     (widget.decoration as BoxDecoration).color == AppDesignSystem.dividerLight,
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color ==
+                  AppDesignSystem.dividerLight,
         );
-        
+
         expect(dividerContainer, findsOneWidget);
       });
 
-      testWidgets('formats time range correctly for different durations',
-          (tester) async {
+      testWidgets('formats time range correctly for different durations', (
+        tester,
+      ) async {
         final timestamp = VideoTimestamp(
           id: 'test-timestamp-2',
           startTime: const Duration(minutes: 1, seconds: 30),
@@ -89,9 +92,9 @@ void main() {
     group('tap handling', () {
       testWidgets('calls onTap when item is tapped', (tester) async {
         var tapped = false;
-        await tester.pumpWidget(buildTimestampListItem(
-          onTap: () => tapped = true,
-        ));
+        await tester.pumpWidget(
+          buildTimestampListItem(onTap: () => tapped = true),
+        );
 
         await tester.tap(find.byType(InkWell));
         await tester.pumpAndSettle();
@@ -110,17 +113,17 @@ void main() {
     });
 
     group('action buttons', () {
-      testWidgets('displays edit button when onEdit is provided',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () {},
-        ));
+      testWidgets('displays edit button when onEdit is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTimestampListItem(onEdit: () {}));
 
         expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
       });
 
-      testWidgets('does not display edit button when onEdit is null',
-          (tester) async {
+      testWidgets('does not display edit button when onEdit is null', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTimestampListItem());
 
         expect(find.byIcon(Icons.edit_outlined), findsNothing);
@@ -128,9 +131,9 @@ void main() {
 
       testWidgets('calls onEdit when edit button is pressed', (tester) async {
         var editPressed = false;
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () => editPressed = true,
-        ));
+        await tester.pumpWidget(
+          buildTimestampListItem(onEdit: () => editPressed = true),
+        );
 
         await tester.tap(find.byIcon(Icons.edit_outlined));
         await tester.pumpAndSettle();
@@ -138,28 +141,29 @@ void main() {
         expect(editPressed, isTrue);
       });
 
-      testWidgets('displays delete button when onDelete is provided',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onDelete: () {},
-        ));
+      testWidgets('displays delete button when onDelete is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTimestampListItem(onDelete: () {}));
 
         expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       });
 
-      testWidgets('does not display delete button when onDelete is null',
-          (tester) async {
+      testWidgets('does not display delete button when onDelete is null', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTimestampListItem());
 
         expect(find.byIcon(Icons.delete_outline), findsNothing);
       });
 
-      testWidgets('calls onDelete when delete button is pressed',
-          (tester) async {
+      testWidgets('calls onDelete when delete button is pressed', (
+        tester,
+      ) async {
         var deletePressed = false;
-        await tester.pumpWidget(buildTimestampListItem(
-          onDelete: () => deletePressed = true,
-        ));
+        await tester.pumpWidget(
+          buildTimestampListItem(onDelete: () => deletePressed = true),
+        );
 
         await tester.tap(find.byIcon(Icons.delete_outline));
         await tester.pumpAndSettle();
@@ -167,77 +171,80 @@ void main() {
         expect(deletePressed, isTrue);
       });
 
-      testWidgets('displays both edit and delete buttons when both provided',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () {},
-          onDelete: () {},
-        ));
+      testWidgets('displays both edit and delete buttons when both provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTimestampListItem(onEdit: () {}, onDelete: () {}),
+        );
 
         expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
         expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       });
 
       testWidgets('delete button has error red color', (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onDelete: () {},
-        ));
+        await tester.pumpWidget(buildTimestampListItem(onDelete: () {}));
 
         final deleteButton = tester.widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.delete_outline));
+          find.widgetWithIcon(IconButton, Icons.delete_outline),
+        );
         expect(deleteButton.color, AppDesignSystem.errorRed);
       });
 
       testWidgets('edit button has secondary text color', (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () {},
-        ));
+        await tester.pumpWidget(buildTimestampListItem(onEdit: () {}));
 
         final editButton = tester.widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.edit_outlined));
+          find.widgetWithIcon(IconButton, Icons.edit_outlined),
+        );
         expect(editButton.color, AppDesignSystem.textSecondary);
       });
     });
 
     group('editing mode', () {
-      testWidgets('shows edit form when isEditing is true and editForm provided',
-          (tester) async {
-        const editFormKey = Key('edit-form');
-        await tester.pumpWidget(buildTimestampListItem(
-          isEditing: true,
-          editForm: const Text('Edit Form', key: editFormKey),
-        ));
+      testWidgets(
+        'shows edit form when isEditing is true and editForm provided',
+        (tester) async {
+          const editFormKey = Key('edit-form');
+          await tester.pumpWidget(
+            buildTimestampListItem(
+              isEditing: true,
+              editForm: const Text('Edit Form', key: editFormKey),
+            ),
+          );
 
-        expect(find.byKey(editFormKey), findsOneWidget);
-        expect(find.text('Edit Form'), findsOneWidget);
+          expect(find.byKey(editFormKey), findsOneWidget);
+          expect(find.text('Edit Form'), findsOneWidget);
 
-        // Normal content should not be visible
-        expect(find.text('Pirouette'), findsNothing);
-        expect(find.byIcon(Icons.bookmark), findsNothing);
-      });
+          // Normal content should not be visible
+          expect(find.text('Pirouette'), findsNothing);
+          expect(find.byIcon(Icons.bookmark), findsNothing);
+        },
+      );
 
-      testWidgets('shows normal view when isEditing is false',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          isEditing: false,
-          editForm: const Text('Edit Form'),
-        ));
+      testWidgets('shows normal view when isEditing is false', (tester) async {
+        await tester.pumpWidget(
+          buildTimestampListItem(
+            isEditing: false,
+            editForm: const Text('Edit Form'),
+          ),
+        );
 
         expect(find.text('Edit Form'), findsNothing);
         expect(find.text('Pirouette'), findsOneWidget);
       });
 
       testWidgets(
-          'shows normal view when isEditing is true but editForm is null',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          isEditing: true,
-          editForm: null,
-        ));
+        'shows normal view when isEditing is true but editForm is null',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTimestampListItem(isEditing: true, editForm: null),
+          );
 
-        expect(find.text('Pirouette'), findsOneWidget);
-        expect(find.byIcon(Icons.bookmark), findsOneWidget);
-      });
+          expect(find.text('Pirouette'), findsOneWidget);
+          expect(find.byIcon(Icons.bookmark), findsOneWidget);
+        },
+      );
     });
 
     group('text overflow', () {
@@ -258,12 +265,10 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('has proper widget tree for screen readers',
-          (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () {},
-          onDelete: () {},
-        ));
+      testWidgets('has proper widget tree for screen readers', (tester) async {
+        await tester.pumpWidget(
+          buildTimestampListItem(onEdit: () {}, onDelete: () {}),
+        );
 
         // Verify semantic structure - InkWell is used within MaterialApp scaffolding
         expect(find.byType(IconButton), findsNWidgets(2));
@@ -273,14 +278,12 @@ void main() {
 
     group('design system compliance', () {
       testWidgets('uses correct colors from design system', (tester) async {
-        await tester.pumpWidget(buildTimestampListItem(
-          onEdit: () {},
-          onDelete: () {},
-        ));
+        await tester.pumpWidget(
+          buildTimestampListItem(onEdit: () {}, onDelete: () {}),
+        );
 
         // Bookmark icon color
-        final bookmarkIcon =
-            tester.widget<Icon>(find.byIcon(Icons.bookmark));
+        final bookmarkIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark));
         expect(bookmarkIcon.color, AppDesignSystem.accentBlue);
 
         // Timestamp text color
@@ -377,18 +380,20 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(MaterialApp(
-          home: Scaffold(
-            body: ListView.builder(
-              itemCount: timestamps.length,
-              itemBuilder: (context, index) => TimestampListItem(
-                timestamp: timestamps[index],
-                onEdit: () {},
-                onDelete: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ListView.builder(
+                itemCount: timestamps.length,
+                itemBuilder: (context, index) => TimestampListItem(
+                  timestamp: timestamps[index],
+                  onEdit: () {},
+                  onDelete: () {},
+                ),
               ),
             ),
           ),
-        ));
+        );
 
         expect(find.text('First'), findsOneWidget);
         expect(find.text('Second'), findsOneWidget);
