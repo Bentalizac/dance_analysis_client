@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import '../features/home/presentation/pages/home_page.dart';
-import '../features/upload/presentation/controllers/upload_controller.dart';
 import '../features/upload/presentation/pages/upload_page.dart';
 import '../shared/design_system/theme.dart';
-import '../shared/widgets/discard_confirmation_dialog.dart';
 import '../ui/demo_results_page.dart';
+
+/// Global key to access navigator state for upload guard
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Callback to check if user can leave upload page
+/// Set by UploadPageContent when mounted
+Future<bool> Function()? _uploadPageCanLeaveCallback;
+
+/// Register callback for upload page navigation guard
+void registerUploadPageGuard(Future<bool> Function()? callback) {
+  _uploadPageCanLeaveCallback = callback;
+}
 
 /// App routing configuration using go_router.
 ///
@@ -18,6 +27,7 @@ import '../ui/demo_results_page.dart';
 /// - Navigation guards
 /// - Route-level state management
 final GoRouter appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
   routes: [
     ShellRoute(
@@ -152,22 +162,9 @@ class _MainScaffold extends StatelessWidget {
     if (index == currentIndex) return;
 
     // Check if leaving upload page with unsaved work
-    if (currentLocation.startsWith('/upload')) {
-      try {
-        final controller = context.read<UploadController?>();
-        if (controller != null && controller.hasUnsavedWork) {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => DiscardConfirmationDialog(
-              timestampCount: controller.state.timestamps.length,
-            ),
-          );
-
-          if (confirmed != true) return; // User cancelled
-        }
-      } catch (e) {
-        // Controller not available, allow navigation
-      }
+    if (currentLocation.startsWith('/upload') && _uploadPageCanLeaveCallback != null) {
+      final canLeave = await _uploadPageCanLeaveCallback!();
+      if (!canLeave) return; // User cancelled
     }
 
     // Navigate to selected tab

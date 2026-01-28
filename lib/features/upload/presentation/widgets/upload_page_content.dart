@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../../config/routes.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/widgets/discard_confirmation_dialog.dart';
 import '../../../../shared/widgets/timestamp_manager.dart';
@@ -42,6 +43,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
       // Listen for video selection to initialize player
       context.read<UploadController>().addListener(_onUploadStateChanged);
+      
+      // Register navigation guard for bottom nav
+      registerUploadPageGuard(() => _handleNavigationAttempt(context));
     });
   }
 
@@ -54,6 +58,8 @@ class _UploadPageContentState extends State<UploadPageContent> {
     } catch (e) {
       // Controller may already be disposed
     }
+    // Unregister navigation guard
+    registerUploadPageGuard(null);
     super.dispose();
   }
 
