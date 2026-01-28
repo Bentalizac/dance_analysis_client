@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/upload/presentation/controllers/upload_controller.dart';
 import '../features/upload/presentation/pages/upload_page.dart';
 import '../shared/design_system/theme.dart';
+import '../shared/widgets/discard_confirmation_dialog.dart';
 import '../ui/demo_results_page.dart';
 
 /// App routing configuration using go_router.
@@ -141,7 +144,35 @@ class _MainScaffold extends StatelessWidget {
     return 0; // home
   }
 
-  void _onTabTapped(BuildContext context, int index) {
+  Future<void> _onTabTapped(BuildContext context, int index) async {
+    final currentLocation = GoRouterState.of(context).uri.path;
+    final currentIndex = _getIndexFromPath(currentLocation);
+
+    // Same tab tapped - no action
+    if (index == currentIndex) return;
+
+    // Check if leaving upload page with unsaved work
+    if (currentLocation.startsWith('/upload')) {
+      try {
+        final controller = context.read<UploadController?>();
+        if (controller != null && controller.hasUnsavedWork) {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => DiscardConfirmationDialog(
+              timestampCount: controller.state.timestamps.length,
+            ),
+          );
+
+          if (confirmed != true) return; // User cancelled
+        }
+      } catch (e) {
+        // Controller not available, allow navigation
+      }
+    }
+
+    // Navigate to selected tab
+    if (!context.mounted) return;
+    
     switch (index) {
       case 0:
         context.go('/');

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/discard_confirmation_dialog.dart';
 import '../../../../shared/widgets/timestamp_manager.dart';
 import '../controllers/upload_controller.dart';
 import '../controllers/upload_state.dart';
@@ -86,13 +87,23 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
-      appBar: AppBar(
-        title: const Text('Upload Video'),
-        centerTitle: true,
-      ),
-      body: Consumer<UploadController>(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        final canNavigate = await _handleNavigationAttempt(context);
+        if (canNavigate && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppDesignSystem.backgroundDark,
+        appBar: AppBar(
+          title: const Text('Upload Video'),
+          centerTitle: true,
+        ),
+        body: Consumer<UploadController>(
         builder: (context, controller, _) {
           final state = controller.state;
 
@@ -134,6 +145,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -384,6 +396,26 @@ class _UploadPageContentState extends State<UploadPageContent> {
         ],
       ),
     );
+  }
+
+  /// Handle navigation attempt with confirmation if there's unsaved work
+  Future<bool> _handleNavigationAttempt(BuildContext context) async {
+    final controller = context.read<UploadController>();
+    
+    // Check if there's unsaved work (video selected with timestamps)
+    if (!controller.hasUnsavedWork) {
+      return true; // Allow navigation
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => DiscardConfirmationDialog(
+        timestampCount: controller.state.timestamps.length,
+      ),
+    );
+
+    return confirmed == true;
   }
 
   /// Handle clearing video with confirmation if timestamps exist
