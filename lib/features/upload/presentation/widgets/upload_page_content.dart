@@ -27,41 +27,59 @@ class _UploadPageContentState extends State<UploadPageContent> {
     super.initState();
     _emailController = TextEditingController();
 
-    // Listen for email changes
-    _emailController.addListener(() {
-      context.read<UploadController>().updateEmail(_emailController.text);
-    });
+    // Use addPostFrameCallback to safely access providers after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
-    // Listen for video selection to initialize player
-    context.read<UploadController>().addListener(_onUploadStateChanged);
+      // Listen for email changes
+      _emailController.addListener(() {
+        if (mounted) {
+          context.read<UploadController>().updateEmail(_emailController.text);
+        }
+      });
+
+      // Listen for video selection to initialize player
+      context.read<UploadController>().addListener(_onUploadStateChanged);
+    });
   }
 
   @override
   void dispose() {
     _emailController.dispose();
-    context.read<UploadController>().removeListener(_onUploadStateChanged);
+    // Safely remove listener
+    try {
+      context.read<UploadController>().removeListener(_onUploadStateChanged);
+    } catch (e) {
+      // Controller may already be disposed
+    }
     super.dispose();
   }
 
   void _onUploadStateChanged() {
+    if (!mounted) return;
+
     final controller = context.read<UploadController>();
-    final playerManager = context.read<VideoPlayerManager>();
     final state = controller.state;
 
     // Initialize video player when video is selected
-    if (state.hasVideo && !playerManager.isInitialized) {
-      final videoPath = state.video!.path;
-      playerManager.initialize(videoPath, isWeb: false).catchError((e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not load video preview: $e'),
-              backgroundColor: AppDesignSystem.errorRed,
-            ),
-          );
-        }
-        return null;
-      });
+    if (state.hasVideo) {
+      final playerManager = context.read<VideoPlayerManager>();
+      
+      // Only initialize if not already initialized
+      if (!playerManager.isInitialized) {
+        final videoPath = state.video!.path;
+        playerManager.initialize(videoPath, isWeb: false).catchError((e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not load video preview: $e'),
+                backgroundColor: AppDesignSystem.errorRed,
+              ),
+            );
+          }
+          return null;
+        });
+      }
     }
   }
 

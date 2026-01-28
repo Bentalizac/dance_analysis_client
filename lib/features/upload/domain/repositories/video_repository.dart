@@ -25,5 +25,5 @@ class VideoRepository {
   }
 
   /// Get validation configuration
-  static VideoConfig get config => VideoConfig;
+  static VideoConfig get config => VideoConfig();
 }

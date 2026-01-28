@@ -26,7 +26,7 @@ class VideoPlayerManager extends ChangeNotifier {
   ///
   /// Disposes any existing player before creating a new one.
   Future<void> initialize(String videoPath, {bool isWeb = false}) async {
-    await dispose();
+    await disposeController();
 
     try {
       final VideoPlayerController controller;
@@ -81,10 +81,18 @@ class VideoPlayerManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  Future<void> dispose() async {
+  /// Dispose of the current video controller without disposing the manager itself.
+  ///
+  /// This allows the manager to be reused for different videos.
+  Future<void> disposeController() async {
     await _controller?.dispose();
     _controller = null;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await disposeController();
     super.dispose();
   }
 }
