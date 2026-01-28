@@ -5,8 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
+import '../../features/upload/presentation/controllers/upload_state.dart';
 import '../../models/video_timestamp.dart';
-import '../../state/upload_state.dart';
 
 /// API client responsible for calling the backend `/analyze` endpoint.
 ///

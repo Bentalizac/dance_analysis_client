@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../shared/design_system/theme.dart';
 import '../controllers/upload_controller.dart';
@@ -251,7 +252,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.dividerLight),
+          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
@@ -325,5 +326,3 @@ class _UploadPageContentState extends State<UploadPageContent> {
   }
 }
 
-// Re-export VideoPlayer from video_player package
-export 'package:video_player/video_player.dart' show VideoPlayer;

@@ -1,12 +1,9 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/services/api_client.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../controllers/upload_controller.dart';
-import '../controllers/upload_state.dart';
 import '../controllers/video_player_manager.dart';
 import '../widgets/upload_page_content.dart';
 

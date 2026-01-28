@@ -1,7 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../shared/services/video_service.dart';
-import '../../../../state/upload_state.dart';
+import '../../presentation/controllers/upload_state.dart';
 
 /// Repository for video-related operations.
 ///
@@ -25,5 +25,5 @@ class VideoRepository {
   }
 
   /// Get validation configuration
-  VideoConfig get config => VideoConfig;
+  static VideoConfig get config => VideoConfig;
 }

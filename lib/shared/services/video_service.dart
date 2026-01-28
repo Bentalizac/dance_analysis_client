@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 
-import '../../state/upload_state.dart';
+import '../../features/upload/presentation/controllers/upload_state.dart';
 import 'video_service_io.dart' if (dart.library.html) 'video_service_web.dart';
 
 /// Centralized video validation configuration
