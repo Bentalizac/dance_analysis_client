@@ -29,8 +29,8 @@ class _MainScaffoldState extends State<MainScaffold> {
   // Pages are instantiated once and reused to preserve state
   late final List<Widget> _pages;
   
-  // GlobalKeys to access page state for navigation guards
-  final _uploadPageKey = GlobalKey<_UploadPageState>();
+  // GlobalKey to access UploadPage for navigation guards
+  final _uploadPageKey = GlobalKey<State<UploadPage>>();
 
   @override
   void initState() {
@@ -60,7 +60,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   Widget _buildBottomNavigationBar() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppDesignSystem.backgroundMedium,
         border: Border(
           top: BorderSide(color: AppDesignSystem.dividerLight, width: 1),
@@ -117,7 +117,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     // Check if current page wants to block navigation
     // Currently only UploadPage (index 1) has navigation guards
     if (_currentIndex == 1) {
-      final uploadState = _uploadPageKey.currentState;
+      final uploadState = _uploadPageKey.currentState as UploadPageState?;
       if (uploadState != null) {
         final canNavigate = await uploadState.canNavigateAway();
         if (!canNavigate) {

@@ -111,7 +111,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                   const SizedBox(height: AppDesignSystem.spacingLg),
 
                   // Timestamp management section (only show when video is loaded)
-                  if (state.hasVideo) ..[
+                  if (state.hasVideo) ...[
                     _buildTimestampSection(controller, state),
                     const SizedBox(height: AppDesignSystem.spacingLg),
                   ],
@@ -234,6 +234,44 @@ class _UploadPageContentState extends State<UploadPageContent> {
               ),
             ),
             const SizedBox(height: AppDesignSystem.spacingSm),
+            // Video scrubber
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDesignSystem.spacingMd,
+              ),
+              child: Column(
+                children: [
+                  VideoProgressIndicator(
+                    playerManager.controller!,
+                    allowScrubbing: true,
+                    colors: VideoProgressColors(
+                      playedColor: AppDesignSystem.accentBlue,
+                      bufferedColor: AppDesignSystem.accentBlue.withValues(alpha: 0.3),
+                      backgroundColor: AppDesignSystem.dividerLight,
+                    ),
+                  ),
+                  const SizedBox(height: AppDesignSystem.spacingXs),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatDuration(playerManager.position),
+                        style: AppDesignSystem.smallTextStyle.copyWith(
+                          color: AppDesignSystem.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        _formatDuration(playerManager.duration),
+                        style: AppDesignSystem.smallTextStyle.copyWith(
+                          color: AppDesignSystem.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDesignSystem.spacingSm),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -246,9 +284,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 ),
                 const SizedBox(width: AppDesignSystem.spacingMd),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    context.read<UploadController>().clearVideo();
-                  },
+                  onPressed: () => _handleClearVideo(context),
                   icon: const Icon(Icons.close, size: 18),
                   label: const Text('Clear'),
                   style: ElevatedButton.styleFrom(
@@ -348,6 +384,58 @@ class _UploadPageContentState extends State<UploadPageContent> {
         ],
       ),
     );
+  }
+
+  /// Handle clearing video with confirmation if timestamps exist
+  Future<void> _handleClearVideo(BuildContext context) async {
+    final controller = context.read<UploadController>();
+    final state = controller.state;
+
+    // If there are timestamps, show confirmation dialog
+    if (state.timestamps.isNotEmpty) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppDesignSystem.backgroundMedium,
+          title: Text(
+            'Clear Video?',
+            style: TextStyle(color: AppDesignSystem.textPrimary),
+          ),
+          content: Text(
+            'You have ${state.timestamps.length} timestamp${state.timestamps.length == 1 ? '' : 's'}. '
+            'Clearing the video will remove all timestamps. This cannot be undone.',
+            style: TextStyle(color: AppDesignSystem.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppDesignSystem.textSecondary),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                'Clear',
+                style: TextStyle(color: AppDesignSystem.errorRed),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+    }
+
+    controller.clearVideo();
+  }
+
+  /// Format duration as MM:SS
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _buildTimestampSection(UploadController controller, UploadState state) {

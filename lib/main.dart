@@ -120,7 +120,7 @@ class MyApp extends StatelessWidget {
         ),
         // Provide repositories
         ProxyProvider<VideoService, VideoRepository>(
-          update: (_, videoService, __) => VideoRepository(videoService),
+          update: (context, videoService, previous) => VideoRepository(videoService),
         ),
       ],
       child: MaterialApp.router(

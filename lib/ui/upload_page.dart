@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -32,14 +31,15 @@ class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
 
   @override
-  State<UploadPage> createState() => _UploadPageState();
+  State<UploadPage> createState() => UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> {
+class UploadPageState extends State<UploadPage> {
   late final UploadController _controller;
   late final TextEditingController _emailController;
   VideoPlayerController? _videoPlayerController;
   bool _isVideoPlayerInitialized = false;
+
 
   @override
   void initState() {
