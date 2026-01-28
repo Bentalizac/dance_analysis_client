@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'config/routes.dart';
+import 'features/upload/domain/repositories/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_client.dart';
 import 'shared/services/video_service.dart';
@@ -116,6 +117,10 @@ class MyApp extends StatelessWidget {
         ),
         Provider<ApiClient>(
           create: (_) => ApiClient(),
+        ),
+        // Provide repositories
+        ProxyProvider<VideoService, VideoRepository>(
+          update: (_, videoService, __) => VideoRepository(videoService),
         ),
       ],
       child: MaterialApp.router(

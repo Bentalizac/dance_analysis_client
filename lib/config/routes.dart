@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/upload/presentation/pages/upload_page.dart';
 import '../shared/design_system/theme.dart';
 import '../ui/demo_results_page.dart';
-import '../ui/upload_page.dart';
 
 /// App routing configuration using go_router.
 ///
@@ -33,10 +34,12 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/upload',
           name: 'upload',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const UploadPage(),
-          ),
+          pageBuilder: (context, state) {
+            return NoTransitionPage(
+              key: state.pageKey,
+              child: const UploadPage(),
+            );
+          },
         ),
         GoRoute(
           path: '/history',
@@ -88,9 +91,9 @@ class _MainScaffold extends StatelessWidget {
     final currentIndex = _getIndexFromPath(currentLocation);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppDesignSystem.backgroundMedium,
-        border: const Border(
+        border: Border(
           top: BorderSide(color: AppDesignSystem.dividerLight, width: 1),
         ),
       ),
