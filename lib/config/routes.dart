@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/home/presentation/pages/home_page.dart';
 import '../shared/design_system/theme.dart';
 import '../ui/demo_results_page.dart';
-import '../ui/home_page.dart';
 import '../ui/upload_page.dart';
 
 /// App routing configuration using go_router.
