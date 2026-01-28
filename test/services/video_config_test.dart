@@ -1,4 +1,4 @@
-import 'package:dance_analysis_client/services/video_service.dart';
+import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

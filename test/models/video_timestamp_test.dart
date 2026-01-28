@@ -133,10 +133,7 @@ void main() {
           label: 'Test',
         );
 
-        expect(
-          timestamp.duration,
-          const Duration(minutes: 1, seconds: 45),
-        );
+        expect(timestamp.duration, const Duration(minutes: 1, seconds: 45));
       });
 
       test('handles zero duration', () {
@@ -176,7 +173,9 @@ void main() {
           label: 'Test',
         );
 
-        final updated = original.copyWith(startTime: const Duration(seconds: 8));
+        final updated = original.copyWith(
+          startTime: const Duration(seconds: 8),
+        );
 
         expect(updated.startTime, const Duration(seconds: 8));
         expect(updated.id, original.id);

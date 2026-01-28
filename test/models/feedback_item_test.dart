@@ -115,10 +115,7 @@ void main() {
       });
 
       test('returns Duration.zero for timestamp without colon', () {
-        const item = FeedbackItem(
-          timestamp: '15',
-          type: FeedbackType.positive,
-        );
+        const item = FeedbackItem(timestamp: '15', type: FeedbackType.positive);
 
         expect(item.duration, Duration.zero);
       });
@@ -199,10 +196,7 @@ void main() {
       });
 
       test('handles negative type', () {
-        final json = {
-          'timestamp': '0:15',
-          'type': 'negative',
-        };
+        final json = {'timestamp': '0:15', 'type': 'negative'};
 
         final item = FeedbackItem.fromJson(json);
 
@@ -210,10 +204,7 @@ void main() {
       });
 
       test('defaults to negative for unknown type', () {
-        final json = {
-          'timestamp': '0:15',
-          'type': 'unknown_type',
-        };
+        final json = {'timestamp': '0:15', 'type': 'unknown_type'};
 
         final item = FeedbackItem.fromJson(json);
 

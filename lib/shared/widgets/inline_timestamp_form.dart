@@ -242,13 +242,13 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
             const SizedBox(height: AppDesignSystem.spacingSm),
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingSm),
-            decoration: BoxDecoration(
-              color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-              border: Border.all(
-                color: AppDesignSystem.errorRed.withValues(alpha: 0.3),
+              decoration: BoxDecoration(
+                color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+                border: Border.all(
+                  color: AppDesignSystem.errorRed.withValues(alpha: 0.3),
+                ),
               ),
-            ),
               child: Row(
                 children: [
                   const Icon(

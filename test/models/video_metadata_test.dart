@@ -267,7 +267,9 @@ void main() {
       });
 
       test('updates startTime', () {
-        final updated = original.copyWith(startTime: const Duration(seconds: 10));
+        final updated = original.copyWith(
+          startTime: const Duration(seconds: 10),
+        );
 
         expect(updated.startTime, const Duration(seconds: 10));
       });
@@ -285,7 +287,9 @@ void main() {
       });
 
       test('updates totalDuration', () {
-        final updated = original.copyWith(totalDuration: const Duration(seconds: 120));
+        final updated = original.copyWith(
+          totalDuration: const Duration(seconds: 120),
+        );
 
         expect(updated.totalDuration, const Duration(seconds: 120));
       });

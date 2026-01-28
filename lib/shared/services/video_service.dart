@@ -6,7 +6,6 @@ import 'video_service_io.dart' if (dart.library.html) 'video_service_web.dart';
 
 /// Centralized video validation configuration
 class VideoConfig {
-
   /// Maximum duration we accept for a clip (20 seconds)
   static const Duration maxDuration = Duration(seconds: 20);
 
@@ -66,11 +65,7 @@ class VideoService {
       );
     }
 
-    return SelectedVideo(
-      xFile: picked,
-      duration: duration,
-      sizeBytes: size,
-    );
+    return SelectedVideo(xFile: picked, duration: duration, sizeBytes: size);
   }
 }
 

@@ -21,9 +21,7 @@ class UploadPage extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Video player manager for playback controls
-        ChangeNotifierProvider(
-          create: (_) => VideoPlayerManager(),
-        ),
+        ChangeNotifierProvider(create: (_) => VideoPlayerManager()),
         // Upload controller for business logic
         ChangeNotifierProvider(
           create: (context) => UploadController(

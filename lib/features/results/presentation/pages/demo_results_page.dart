@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/feedback_item.dart';
+import '../../../../models/feedback_item.dart';
 import 'results_page.dart';
 
 /// Demo page showing the ResultsPage with sample feedback data

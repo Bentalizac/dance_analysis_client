@@ -112,15 +112,12 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Provide services as singletons
-        Provider<VideoService>(
-          create: (_) => VideoService(),
-        ),
-        Provider<ApiClient>(
-          create: (_) => ApiClient(),
-        ),
+        Provider<VideoService>(create: (_) => VideoService()),
+        Provider<ApiClient>(create: (_) => ApiClient()),
         // Provide repositories
         ProxyProvider<VideoService, VideoRepository>(
-          update: (context, videoService, previous) => VideoRepository(videoService),
+          update: (context, videoService, previous) =>
+              VideoRepository(videoService),
         ),
       ],
       child: MaterialApp.router(

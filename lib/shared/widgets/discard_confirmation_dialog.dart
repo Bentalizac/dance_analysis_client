@@ -8,10 +8,7 @@ import '../design_system/theme.dart';
 /// discard their progress (timestamps, trim settings, etc.) before clearing
 /// the selected video or navigating away.
 class DiscardConfirmationDialog extends StatelessWidget {
-  const DiscardConfirmationDialog({
-    super.key,
-    this.timestampCount = 0,
-  });
+  const DiscardConfirmationDialog({super.key, this.timestampCount = 0});
 
   /// Number of timestamps that will be lost
   final int timestampCount;

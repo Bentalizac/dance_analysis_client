@@ -5,10 +5,12 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
+import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart'
+    as _i2;
+import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
+    as _i4;
 import 'package:dance_analysis_client/models/video_timestamp.dart' as _i7;
-import 'package:dance_analysis_client/services/api_client.dart' as _i6;
-import 'package:dance_analysis_client/services/video_service.dart' as _i2;
-import 'package:dance_analysis_client/state/upload_state.dart' as _i4;
+import 'package:dance_analysis_client/shared/services/api_client.dart' as _i6;
 import 'package:image_picker/image_picker.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 
@@ -27,20 +29,18 @@ import 'package:mockito/mockito.dart' as _i1;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-/// A class which mocks [VideoService].
+/// A class which mocks [VideoRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockVideoService extends _i1.Mock implements _i2.VideoService {
-  MockVideoService() {
+class MockVideoRepository extends _i1.Mock implements _i2.VideoRepository {
+  MockVideoRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<_i4.SelectedVideo?> pickAndValidateVideo(
-    _i5.ImageSource? source,
-  ) =>
+  _i3.Future<_i4.SelectedVideo?> pickVideo(_i5.ImageSource? source) =>
       (super.noSuchMethod(
-            Invocation.method(#pickAndValidateVideo, [source]),
+            Invocation.method(#pickVideo, [source]),
             returnValue: _i3.Future<_i4.SelectedVideo?>.value(),
           )
           as _i3.Future<_i4.SelectedVideo?>);

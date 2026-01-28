@@ -12,10 +12,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignSystem.backgroundDark,
-      appBar: AppBar(
-        title: const Text('Dance Coach'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Dance Coach'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
@@ -74,9 +71,9 @@ class HomePage extends StatelessWidget {
                 subtitle: 'Review your analysis results',
                 onTap: () {
                   // TODO: Implement review page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon')));
                 },
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/feedback_item.dart';
-import '../design_system.dart';
+import '../../../../models/feedback_item.dart';
+import '../../../../shared/design_system/theme.dart';
 
 /// A single feedback item in the list showing timestamp and optional feedback
 class FeedbackListItem extends StatefulWidget {

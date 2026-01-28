@@ -7,7 +7,8 @@ class VideoPlaceholder extends StatelessWidget {
     super.key,
     this.height = 250,
     this.message = 'Video Playback Unavailable',
-    this.subtitle = 'The original video was not saved locally.\nReview the analysis feedback below.',
+    this.subtitle =
+        'The original video was not saved locally.\nReview the analysis feedback below.',
     this.icon = Icons.video_library_outlined,
   });
 

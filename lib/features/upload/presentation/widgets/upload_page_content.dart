@@ -43,7 +43,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
       // Listen for video selection to initialize player
       context.read<UploadController>().addListener(_onUploadStateChanged);
-      
+
       // Register navigation guard for bottom nav
       registerUploadPageGuard(() => _handleNavigationAttempt(context));
     });
@@ -72,7 +72,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
     // Initialize video player when video is selected
     if (state.hasVideo) {
       final playerManager = context.read<VideoPlayerManager>();
-      
+
       // Only initialize if not already initialized
       if (!playerManager.isInitialized) {
         final videoPath = state.video!.path;
@@ -94,12 +94,12 @@ class _UploadPageContentState extends State<UploadPageContent> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<UploadController>();
-    
+
     return PopScope(
       canPop: !controller.hasUnsavedWork,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        
+
         // If we reach here, canPop was false, meaning there's unsaved work
         final confirmed = await _handleNavigationAttempt(context);
         if (confirmed && context.mounted) {
@@ -110,53 +110,51 @@ class _UploadPageContentState extends State<UploadPageContent> {
       },
       child: Scaffold(
         backgroundColor: AppDesignSystem.backgroundDark,
-        appBar: AppBar(
-          title: const Text('Upload Video'),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: const Text('Upload Video'), centerTitle: true),
         body: Consumer<UploadController>(
-        builder: (context, controller, _) {
-          final state = controller.state;
+          builder: (context, controller, _) {
+            final state = controller.state;
 
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Video selection section
-                  if (!state.hasVideo) _buildVideoSelectionSection(controller),
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Video selection section
+                    if (!state.hasVideo)
+                      _buildVideoSelectionSection(controller),
 
-                  // Video preview section
-                  if (state.hasVideo) _buildVideoPreviewSection(state),
+                    // Video preview section
+                    if (state.hasVideo) _buildVideoPreviewSection(state),
 
-                  const SizedBox(height: AppDesignSystem.spacingLg),
-
-                  // Timestamp management section (only show when video is loaded)
-                  if (state.hasVideo) ...[
-                    _buildTimestampSection(controller, state),
                     const SizedBox(height: AppDesignSystem.spacingLg),
+
+                    // Timestamp management section (only show when video is loaded)
+                    if (state.hasVideo) ...[
+                      _buildTimestampSection(controller, state),
+                      const SizedBox(height: AppDesignSystem.spacingLg),
+                    ],
+
+                    // Email input
+                    _buildEmailInput(state),
+
+                    const SizedBox(height: AppDesignSystem.spacingLg),
+
+                    // Upload button
+                    _buildUploadButton(controller, state),
+
+                    // Error message
+                    if (state.errorMessage != null) ...[
+                      const SizedBox(height: AppDesignSystem.spacingMd),
+                      _buildErrorMessage(state.errorMessage!),
+                    ],
                   ],
-
-                  // Email input
-                  _buildEmailInput(state),
-
-                  const SizedBox(height: AppDesignSystem.spacingLg),
-
-                  // Upload button
-                  _buildUploadButton(controller, state),
-
-                  // Error message
-                  if (state.errorMessage != null) ...[
-                    const SizedBox(height: AppDesignSystem.spacingMd),
-                    _buildErrorMessage(state.errorMessage!),
-                  ],
-                ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -238,9 +236,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
               color: AppDesignSystem.backgroundMedium,
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -269,7 +265,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     allowScrubbing: true,
                     colors: VideoProgressColors(
                       playedColor: AppDesignSystem.accentBlue,
-                      bufferedColor: AppDesignSystem.accentBlue.withValues(alpha: 0.3),
+                      bufferedColor: AppDesignSystem.accentBlue.withValues(
+                        alpha: 0.3,
+                      ),
                       backgroundColor: AppDesignSystem.dividerLight,
                     ),
                   ),
@@ -361,7 +359,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
           ? () => controller.upload()
           : null,
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: AppDesignSystem.spacingMd),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppDesignSystem.spacingMd,
+        ),
         backgroundColor: AppDesignSystem.accentBlue,
         disabledBackgroundColor: AppDesignSystem.backgroundMedium,
       ),
@@ -376,10 +376,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
             )
           : const Text(
               'Upload Video',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
     );
   }
@@ -412,7 +409,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
   /// Handle navigation attempt with confirmation if there's unsaved work
   Future<bool> _handleNavigationAttempt(BuildContext context) async {
     final controller = context.read<UploadController>();
-    
+
     // Check if there's unsaved work (video selected with timestamps)
     if (!controller.hasUnsavedWork) {
       return true; // Allow navigation
@@ -481,7 +478,10 @@ class _UploadPageContentState extends State<UploadPageContent> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildTimestampSection(UploadController controller, UploadState state) {
+  Widget _buildTimestampSection(
+    UploadController controller,
+    UploadState state,
+  ) {
     return Consumer<VideoPlayerManager>(
       builder: (context, playerManager, _) {
         return Container(
@@ -520,4 +520,3 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 }
-

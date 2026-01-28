@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/home/presentation/pages/home_page.dart';
+import '../features/results/presentation/pages/demo_results_page.dart';
 import '../features/upload/presentation/pages/upload_page.dart';
 import '../shared/design_system/theme.dart';
-import '../ui/demo_results_page.dart';
 
 /// Global key to access navigator state for upload guard
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -38,10 +38,8 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/',
           name: 'home',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const HomePage(),
-          ),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const HomePage()),
         ),
         GoRoute(
           path: '/upload',
@@ -162,14 +160,15 @@ class _MainScaffold extends StatelessWidget {
     if (index == currentIndex) return;
 
     // Check if leaving upload page with unsaved work
-    if (currentLocation.startsWith('/upload') && _uploadPageCanLeaveCallback != null) {
+    if (currentLocation.startsWith('/upload') &&
+        _uploadPageCanLeaveCallback != null) {
       final canLeave = await _uploadPageCanLeaveCallback!();
       if (!canLeave) return; // User cancelled
     }
 
     // Navigate to selected tab
     if (!context.mounted) return;
-    
+
     switch (index) {
       case 0:
         context.go('/');
@@ -198,10 +197,7 @@ class _StubPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppDesignSystem.backgroundDark,
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(title), centerTitle: true),
       body: Center(
         child: Container(
           margin: const EdgeInsets.all(AppDesignSystem.spacingXl),

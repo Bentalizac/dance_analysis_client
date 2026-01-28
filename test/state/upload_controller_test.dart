@@ -1,7 +1,8 @@
-import 'package:dance_analysis_client/services/api_client.dart';
-import 'package:dance_analysis_client/services/video_service.dart';
-import 'package:dance_analysis_client/state/upload_controller.dart';
-import 'package:dance_analysis_client/state/upload_state.dart';
+import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
+import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
+import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
+import 'package:dance_analysis_client/shared/services/api_client.dart';
+import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mockito/annotations.dart';
@@ -10,18 +11,18 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoService, ApiClient])
+@GenerateMocks([VideoRepository, ApiClient])
 void main() {
   group('UploadController', () {
-    late MockVideoService mockVideoService;
+    late MockVideoRepository mockVideoRepository;
     late MockApiClient mockApiClient;
     late UploadController controller;
 
     setUp(() {
-      mockVideoService = MockVideoService();
+      mockVideoRepository = MockVideoRepository();
       mockApiClient = MockApiClient();
       controller = UploadController(
-        videoService: mockVideoService,
+        videoRepository: mockVideoRepository,
         apiClient: mockApiClient,
       );
     });
@@ -118,9 +119,7 @@ void main() {
     group('pickVideo', () {
       test('sets pickingVideo status while selecting', () async {
         // Setup mock to delay
-        when(
-          mockVideoService.pickAndValidateVideo(any),
-        ).thenAnswer((_) async => null);
+        when(mockVideoRepository.pickVideo(any)).thenAnswer((_) async => null);
 
         final future = controller.pickVideo(ImageSource.gallery);
 
@@ -131,9 +130,7 @@ void main() {
       });
 
       test('returns to idle when user cancels', () async {
-        when(
-          mockVideoService.pickAndValidateVideo(any),
-        ).thenAnswer((_) async => null);
+        when(mockVideoRepository.pickVideo(any)).thenAnswer((_) async => null);
 
         await controller.pickVideo(ImageSource.gallery);
 
@@ -149,7 +146,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
@@ -167,7 +164,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
@@ -195,7 +192,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
 
         await controller.pickVideo(ImageSource.gallery);
@@ -205,7 +202,7 @@ void main() {
 
       test('sets error status on validation exception', () async {
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenThrow(const VideoValidationException('Video too large'));
 
         await controller.pickVideo(ImageSource.gallery);
@@ -216,7 +213,7 @@ void main() {
 
       test('handles unexpected exceptions', () async {
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenThrow(Exception('Unexpected error'));
 
         await controller.pickVideo(ImageSource.gallery);
@@ -510,7 +507,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
@@ -540,7 +537,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
@@ -581,7 +578,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
@@ -608,7 +605,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 
@@ -639,7 +636,7 @@ void main() {
         );
 
         when(
-          mockVideoService.pickAndValidateVideo(any),
+          mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
 

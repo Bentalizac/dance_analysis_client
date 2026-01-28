@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/feedback_item.dart';
-import '../models/pose_data.dart';
-import 'design_system.dart';
-import 'widgets/feedback_list_item.dart';
-import 'widgets/video_placeholder.dart';
-import 'widgets/video_player_with_overlay.dart';
+import '../../../../models/feedback_item.dart';
+import '../../../../models/pose_data.dart';
+import '../../../../shared/design_system/theme.dart';
+import '../widgets/feedback_list_item.dart';
+import '../../../../shared/widgets/video_placeholder.dart';
+import '../../../../shared/widgets/video_player_with_overlay.dart';
 
 /// Results page showing video analysis feedback with timestamps
 class ResultsPage extends StatefulWidget {
