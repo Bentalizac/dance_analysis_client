@@ -7,11 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('InlineTimestampForm', () {
     late Duration testCurrentPosition;
-    late Duration testMaxDuration;
 
     setUp(() {
       testCurrentPosition = const Duration(seconds: 30);
-      testMaxDuration = const Duration(seconds: 60);
     });
 
     Widget buildForm({
@@ -27,7 +25,7 @@ void main() {
             currentVideoPosition: currentVideoPosition ?? testCurrentPosition,
             existingTimestamp: existingTimestamp,
             maxDuration: maxDuration,
-            onSave: onSave ?? (_, __, ___) {},
+            onSave: onSave ?? (start, end, label) {},
             onCancel: onCancel ?? () {},
           ),
         ),
@@ -535,7 +533,7 @@ void main() {
 
         await tester.pumpWidget(
           buildForm(
-            onSave: (_, __, ___) {
+            onSave: (start, end, label) {
               savePressed = true;
             },
           ),
@@ -588,7 +586,7 @@ void main() {
 
         await tester.pumpWidget(
           buildForm(
-            onSave: (_, __, ___) {
+            onSave: (start, end, label) {
               savePressed = true;
             },
           ),

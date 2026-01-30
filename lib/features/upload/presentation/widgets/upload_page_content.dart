@@ -361,10 +361,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
     UploadController controller,
     UploadState state,
   ) {
-    // ignore: deprecated_member_use
     return DropdownButtonFormField<DanceStyle>(
       key: ValueKey(state.danceStyle),
-      value: state.danceStyle,
+      initialValue: state.danceStyle,
       decoration: InputDecoration(
         labelText: 'Dance Style',
         hintText: 'Select the type of dance',
