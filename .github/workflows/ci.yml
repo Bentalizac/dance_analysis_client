@@ -21,9 +21,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Validate dependencies
-        run: flutter pub get --dry-run
-
       - name: Install dependencies
         run: flutter pub get
 
