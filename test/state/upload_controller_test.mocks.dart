@@ -9,7 +9,8 @@ import 'package:dance_analysis_client/features/upload/domain/repositories/video_
     as _i2;
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
     as _i4;
-import 'package:dance_analysis_client/models/video_timestamp.dart' as _i7;
+import 'package:dance_analysis_client/models/dance_style.dart' as _i7;
+import 'package:dance_analysis_client/models/video_timestamp.dart' as _i8;
 import 'package:dance_analysis_client/shared/services/api_client.dart' as _i6;
 import 'package:image_picker/image_picker.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
@@ -58,7 +59,8 @@ class MockApiClient extends _i1.Mock implements _i6.ApiClient {
   _i3.Future<String?> uploadVideo({
     required _i4.SelectedVideo? video,
     required String? email,
-    List<_i7.VideoTimestamp>? timestamps = const [],
+    required _i7.DanceStyle? danceStyle,
+    List<_i8.VideoTimestamp>? timestamps = const [],
     Duration? trimStart = Duration.zero,
     Duration? trimEnd,
   }) =>
@@ -66,6 +68,7 @@ class MockApiClient extends _i1.Mock implements _i6.ApiClient {
             Invocation.method(#uploadVideo, [], {
               #video: video,
               #email: email,
+              #danceStyle: danceStyle,
               #timestamps: timestamps,
               #trimStart: trimStart,
               #trimEnd: trimEnd,

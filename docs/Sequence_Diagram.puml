@@ -1,0 +1,92 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+
+actor User
+participant "Flutter Client" as Client
+participant "Storage Bucket" as Storage
+participant "Backend API" as API
+participant "Job Queue" as Queue
+participant "Analysis Worker" as Worker
+
+== Video Upload Flow ==
+
+User -> Client: Select/Record Video
+activate Client
+Client -> Client: Validate Video\n(max 20s, 100MB)
+
+User -> Client: Add Timestamps & Metadata\n(email, dance_style, trim_start/end)
+Client -> Client: Prepare multipart request\n(video + metadata + timestamps)
+
+Client -> Storage: Upload video file
+activate Storage
+Storage --> Client: Return storage URL/reference
+deactivate Storage
+
+Client -> API: POST /analyze\n(metadata + storage reference)
+activate API
+note right of API
+  Request fields:
+  - email
+  - dance_style
+  - trim_start_seconds
+  - trim_end_seconds
+  - timestamps (JSON array)
+  - video_reference (storage URL)
+end note
+
+API -> API: Validate request
+API -> Queue: Enqueue analysis job\n(video_reference + metadata)
+activate Queue
+API --> Client: 200 OK\n{"video_reference": "..."}
+deactivate API
+note left of Client
+  Client stores reference ID
+  for tracking upload
+end note
+
+Client -> Client: Update UI state\n(show upload success)
+deactivate Client
+
+== Background Processing ==
+
+Queue -> Worker: Dispatch job
+activate Worker
+Worker -> Storage: Fetch video via reference
+activate Storage
+Storage --> Worker: Stream video data
+deactivate Storage
+
+Worker -> Worker: Extract video frames
+Worker -> Worker: Run pose estimation\n(generate keypoints per frame)
+
+Worker -> Worker: Analyze poses\n(compare against dance style)
+
+Worker -> Worker: Generate feedback items\n(timestamped corrections)
+
+Worker -> API: Store results in database
+activate API
+API -> API: Save analysis result\n(feedback_items + pose_data)
+deactivate API
+
+Worker -> Queue: Mark job complete
+deactivate Worker
+deactivate Queue
+
+== Results Retrieval ==
+
+Client -> API: GET /results/{video_reference}\nor poll /status/{video_reference}
+activate Client
+activate API
+API --> Client: 200 OK\n{"feedback_items": [...], "pose_data": [...]}
+deactivate API
+
+Client -> Client: Deserialize JSON to models\n(FeedbackItem, PoseData)
+
+Client -> Client: Display results page\n(video player + pose overlay)
+
+Client -> User: Show feedback with\npose visualization
+deactivate Client
+
+@enduml

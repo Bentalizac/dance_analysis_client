@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../../features/upload/presentation/controllers/upload_state.dart';
+import '../../models/dance_style.dart';
 import '../../models/video_timestamp.dart';
 
 /// API client responsible for calling the backend `/analyze` endpoint.
@@ -28,6 +29,7 @@ class ApiClient {
   Future<String?> uploadVideo({
     required SelectedVideo video,
     required String email,
+    required DanceStyle danceStyle,
     List<VideoTimestamp> timestamps = const [],
     Duration trimStart = Duration.zero,
     Duration? trimEnd,
@@ -42,6 +44,7 @@ class ApiClient {
     final uri = Uri.parse(_analyzeUrl);
     final request = http.MultipartRequest('POST', uri)
       ..fields['email'] = email
+      ..fields['dance_style'] = danceStyle.toJson()
       ..fields['trim_start_seconds'] = trimStart.inSeconds.toString()
       ..fields['trim_end_seconds'] =
           (trimEnd?.inSeconds ?? video.duration.inSeconds).toString();

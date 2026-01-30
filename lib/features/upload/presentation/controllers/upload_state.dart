@@ -1,5 +1,6 @@
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../models/dance_style.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
 import '../../../../shared/services/video_service.dart';
@@ -53,6 +54,7 @@ class UploadState {
     required this.trimEnd,
     required this.isAddingTimestamp,
     required this.editingTimestampId,
+    required this.danceStyle,
   });
 
   factory UploadState.initial() => const UploadState(
@@ -67,6 +69,7 @@ class UploadState {
     trimEnd: null,
     isAddingTimestamp: false,
     editingTimestampId: null,
+    danceStyle: null,
   );
 
   final UploadStatus status;
@@ -93,10 +96,14 @@ class UploadState {
   /// ID of the timestamp currently being edited (null if none)
   final String? editingTimestampId;
 
+  /// Selected dance style for analysis
+  final DanceStyle? danceStyle;
+
   bool get hasVideo => video != null;
 
   /// Whether the user can attempt an upload.
-  bool get canUpload => hasVideo && isEmailValid && !_isBusy;
+  bool get canUpload =>
+      hasVideo && isEmailValid && danceStyle != null && !_isBusy;
 
   /// Internal convenience for disabling UI while work is in progress.
   bool get _isBusy => switch (status) {
@@ -153,6 +160,8 @@ class UploadState {
     bool? isAddingTimestamp,
     String? editingTimestampId,
     bool clearEditingTimestampId = false,
+    DanceStyle? danceStyle,
+    bool clearDanceStyle = false,
   }) {
     return UploadState(
       status: status ?? this.status,
@@ -170,6 +179,7 @@ class UploadState {
       editingTimestampId: clearEditingTimestampId
           ? null
           : (editingTimestampId ?? this.editingTimestampId),
+      danceStyle: clearDanceStyle ? null : (danceStyle ?? this.danceStyle),
     );
   }
 }

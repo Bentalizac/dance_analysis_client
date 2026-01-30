@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../config/routes.dart';
+import '../../../../models/dance_style.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/widgets/discard_confirmation_dialog.dart';
 import '../../../../shared/widgets/timestamp_manager.dart';
@@ -138,6 +139,11 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
                     // Email input
                     _buildEmailInput(state),
+
+                    const SizedBox(height: AppDesignSystem.spacingLg),
+
+                    // Dance style dropdown
+                    _buildDanceStyleDropdown(controller, state),
 
                     const SizedBox(height: AppDesignSystem.spacingLg),
 
@@ -348,6 +354,54 @@ class _UploadPageContentState extends State<UploadPageContent> {
             ? 'Please enter a valid email'
             : null,
       ),
+    );
+  }
+
+  Widget _buildDanceStyleDropdown(
+    UploadController controller,
+    UploadState state,
+  ) {
+    // ignore: deprecated_member_use
+    return DropdownButtonFormField<DanceStyle>(
+      key: ValueKey(state.danceStyle),
+      value: state.danceStyle,
+      decoration: InputDecoration(
+        labelText: 'Dance Style',
+        hintText: 'Select the type of dance',
+        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.accentBlue),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+          borderSide: const BorderSide(color: AppDesignSystem.accentBlue),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+          borderSide: const BorderSide(color: AppDesignSystem.errorRed),
+        ),
+      ),
+      dropdownColor: AppDesignSystem.backgroundMedium,
+      style: TextStyle(color: AppDesignSystem.textPrimary),
+      items: DanceStyle.values.map((style) {
+        return DropdownMenuItem<DanceStyle>(
+          value: style,
+          child: Text(style.displayName),
+        );
+      }).toList(),
+      onChanged: (DanceStyle? newValue) {
+        controller.updateDanceStyle(newValue);
+      },
+      validator: (value) {
+        if (value == null) {
+          return 'Please select a dance style';
+        }
+        return null;
+      },
     );
   }
 

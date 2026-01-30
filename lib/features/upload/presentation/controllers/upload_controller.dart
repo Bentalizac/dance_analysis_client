@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../models/dance_style.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
 import '../../../../shared/services/api_client.dart';
@@ -67,6 +68,15 @@ class UploadController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateDanceStyle(DanceStyle? style) {
+    _state = _state.copyWith(
+      danceStyle: style,
+      clearDanceStyle: style == null,
+      clearError: true,
+    );
+    notifyListeners();
+  }
+
   Future<void> pickVideo(ImageSource source) async {
     _state = _state.copyWith(
       status: UploadStatus.pickingVideo,
@@ -95,6 +105,7 @@ class UploadController extends ChangeNotifier {
           trimStart: Duration.zero,
           clearTrimEnd: true,
           timestamps: [],
+          // Keep dance style selection when picking a new video
         );
       }
     } on VideoValidationException catch (e) {
@@ -261,6 +272,7 @@ class UploadController extends ChangeNotifier {
       trimStart: Duration.zero,
       clearTrimEnd: true,
       clearError: true,
+      clearDanceStyle: true,
     );
     notifyListeners();
   }
@@ -297,6 +309,7 @@ class UploadController extends ChangeNotifier {
       final backendRef = await _apiClient.uploadVideo(
         video: _state.video!,
         email: _state.email.trim(),
+        danceStyle: _state.danceStyle!,
         timestamps: _state.timestamps,
         trimStart: _state.trimStart,
         trimEnd: _state.trimEnd,

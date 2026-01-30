@@ -1,6 +1,7 @@
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
+import 'package:dance_analysis_client/models/dance_style.dart';
 import 'package:dance_analysis_client/shared/services/api_client.dart';
 import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -492,6 +493,7 @@ void main() {
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
@@ -510,11 +512,13 @@ void main() {
           mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
@@ -540,6 +544,7 @@ void main() {
           mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.waltz);
 
         controller.addTimestamp(
           const Duration(seconds: 2),
@@ -551,6 +556,7 @@ void main() {
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
@@ -563,6 +569,7 @@ void main() {
           mockApiClient.uploadVideo(
             video: mockVideo,
             email: 'test@example.com',
+            danceStyle: DanceStyle.waltz,
             timestamps: controller.state.timestamps,
             trimStart: Duration.zero,
             trimEnd: null,
@@ -581,11 +588,13 @@ void main() {
           mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
@@ -608,11 +617,13 @@ void main() {
           mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.samba);
 
         when(
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
@@ -639,11 +650,13 @@ void main() {
           mockVideoRepository.pickVideo(any),
         ).thenAnswer((_) async => mockVideo);
         await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
           mockApiClient.uploadVideo(
             video: anyNamed('video'),
             email: anyNamed('email'),
+            danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
