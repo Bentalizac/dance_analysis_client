@@ -9,11 +9,14 @@ import 'package:dance_analysis_client/features/upload/domain/repositories/video_
     as _i2;
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
     as _i4;
-import 'package:dance_analysis_client/models/dance_style.dart' as _i7;
-import 'package:dance_analysis_client/models/video_timestamp.dart' as _i8;
-import 'package:dance_analysis_client/shared/services/api_client.dart' as _i6;
+import 'package:dance_analysis_client/models/dance_style.dart' as _i9;
+import 'package:dance_analysis_client/models/video_timestamp.dart' as _i10;
+import 'package:dance_analysis_client/shared/services/api_client.dart' as _i8;
+import 'package:dance_analysis_client/shared/services/storage_service.dart'
+    as _i6;
 import 'package:image_picker/image_picker.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -47,31 +50,55 @@ class MockVideoRepository extends _i1.Mock implements _i2.VideoRepository {
           as _i3.Future<_i4.SelectedVideo?>);
 }
 
+/// A class which mocks [StorageService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockStorageService extends _i1.Mock implements _i6.StorageService {
+  MockStorageService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i3.Future<String> uploadToStorage(_i4.SelectedVideo? video) =>
+      (super.noSuchMethod(
+            Invocation.method(#uploadToStorage, [video]),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#uploadToStorage, [video]),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+}
+
 /// A class which mocks [ApiClient].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockApiClient extends _i1.Mock implements _i6.ApiClient {
+class MockApiClient extends _i1.Mock implements _i8.ApiClient {
   MockApiClient() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<String?> uploadVideo({
-    required _i4.SelectedVideo? video,
+  _i3.Future<String?> submitAnalysisJob({
+    required String? storageReference,
     required String? email,
-    required _i7.DanceStyle? danceStyle,
-    List<_i8.VideoTimestamp>? timestamps = const [],
+    required _i9.DanceStyle? danceStyle,
+    List<_i10.VideoTimestamp>? timestamps = const [],
     Duration? trimStart = Duration.zero,
     Duration? trimEnd,
+    required Duration? videoDuration,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#uploadVideo, [], {
-              #video: video,
+            Invocation.method(#submitAnalysisJob, [], {
+              #storageReference: storageReference,
               #email: email,
               #danceStyle: danceStyle,
               #timestamps: timestamps,
               #trimStart: trimStart,
               #trimEnd: trimEnd,
+              #videoDuration: videoDuration,
             }),
             returnValue: _i3.Future<String?>.value(),
           )

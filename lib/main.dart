@@ -8,6 +8,7 @@ import 'config/routes.dart';
 import 'features/upload/domain/repositories/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_client.dart';
+import 'shared/services/storage_service.dart';
 import 'shared/services/video_service.dart';
 
 void main() {
@@ -113,6 +114,7 @@ class MyApp extends StatelessWidget {
       providers: [
         // Provide services as singletons
         Provider<VideoService>(create: (_) => VideoService()),
+        Provider<StorageService>(create: (_) => StorageService()),
         Provider<ApiClient>(create: (_) => ApiClient()),
         // Provide repositories
         ProxyProvider<VideoService, VideoRepository>(

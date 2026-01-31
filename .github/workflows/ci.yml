@@ -2,15 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
@@ -37,7 +37,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
@@ -64,7 +64,7 @@ jobs:
     name: Build Verification (Web)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
@@ -87,7 +87,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: [analyze, test]
   #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
+  #
   #   steps:
   #     - name: Checkout code
   #       uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
   #   runs-on: macos-latest
   #   needs: [analyze, test]
   #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
+  #
   #   steps:
   #     - name: Checkout code
   #       uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: [analyze, test]
   #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
+  #
   #   steps:
   #     - name: Checkout code
   #       uses: actions/checkout@v4

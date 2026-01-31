@@ -405,7 +405,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
   }
 
   Widget _buildUploadButton(UploadController controller, UploadState state) {
-    final isUploading = state.status == UploadStatus.uploading;
+    final isUploading =
+        state.status == UploadStatus.uploadingToStorage ||
+        state.status == UploadStatus.submittingJob;
 
     return ElevatedButton(
       onPressed: state.canUpload && !isUploading

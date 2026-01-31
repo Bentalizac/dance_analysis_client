@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
-import '../../features/upload/presentation/controllers/upload_state.dart';
 import '../../models/dance_style.dart';
 import '../../models/video_timestamp.dart';
 
@@ -22,17 +20,21 @@ class ApiClient {
   final http.Client _client;
   final String _analyzeUrl;
 
-  /// Perform the upload request with video, metadata, timestamps, and trim info.
+  /// Submit an analysis job to the backend with metadata and storage reference.
   ///
-  /// Returns the backend reference ID for the uploaded video.
+  /// The video should already be uploaded to storage; this method submits
+  /// the job for asynchronous processing by the backend worker.
+  ///
+  /// Returns the backend reference ID for tracking the analysis job.
   /// Throws [ApiException] on any non-successful response or network error.
-  Future<String?> uploadVideo({
-    required SelectedVideo video,
+  Future<String?> submitAnalysisJob({
+    required String storageReference,
     required String email,
     required DanceStyle danceStyle,
     List<VideoTimestamp> timestamps = const [],
     Duration trimStart = Duration.zero,
     Duration? trimEnd,
+    required Duration videoDuration,
   }) async {
     if (_analyzeUrl.isEmpty) {
       // Failing fast here makes misconfiguration obvious during development.
@@ -42,40 +44,29 @@ class ApiClient {
     }
 
     final uri = Uri.parse(_analyzeUrl);
-    final request = http.MultipartRequest('POST', uri)
-      ..fields['email'] = email
-      ..fields['dance_style'] = danceStyle.toJson()
-      ..fields['trim_start_seconds'] = trimStart.inSeconds.toString()
-      ..fields['trim_end_seconds'] =
-          (trimEnd?.inSeconds ?? video.duration.inSeconds).toString();
 
-    // Add timestamps as JSON if present
+    // Build JSON request body
+    final requestBody = <String, dynamic>{
+      'email': email,
+      'dance_style': danceStyle.toJson(),
+      'trim_start_seconds': trimStart.inSeconds,
+      'trim_end_seconds': (trimEnd?.inSeconds ?? videoDuration.inSeconds),
+      'video_reference': storageReference,
+    };
+
+    // Add timestamps as JSON array if present
     if (timestamps.isNotEmpty) {
-      final timestampsJson = timestamps.map((t) => t.toJson()).toList();
-      request.fields['timestamps'] = jsonEncode(timestampsJson);
-    }
-
-    // Use XFile for cross-platform compatibility (web and mobile/desktop)
-    if (kIsWeb) {
-      // On web, read bytes from XFile since we don't have direct file path access
-      final bytes = await video.xFile.readAsBytes();
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'video',
-          bytes,
-          filename: video.xFile.name,
-        ),
-      );
-    } else {
-      // On mobile/desktop, use the more efficient fromPath method
-      request.files.add(await http.MultipartFile.fromPath('video', video.path));
+      requestBody['timestamps'] = timestamps.map((t) => t.toJson()).toList();
     }
 
     try {
-      final streamed = await _client
-          .send(request)
+      final response = await _client
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(requestBody),
+          )
           .timeout(const Duration(seconds: 30));
-      final response = await http.Response.fromStream(streamed);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw ApiException('Server error: HTTP ${response.statusCode}.');
       }

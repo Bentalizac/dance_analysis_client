@@ -3,6 +3,7 @@ import 'package:dance_analysis_client/features/upload/presentation/controllers/u
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
 import 'package:dance_analysis_client/models/dance_style.dart';
 import 'package:dance_analysis_client/shared/services/api_client.dart';
+import 'package:dance_analysis_client/shared/services/storage_service.dart';
 import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,18 +13,21 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoRepository, ApiClient])
+@GenerateMocks([VideoRepository, StorageService, ApiClient])
 void main() {
   group('UploadController', () {
     late MockVideoRepository mockVideoRepository;
+    late MockStorageService mockStorageService;
     late MockApiClient mockApiClient;
     late UploadController controller;
 
     setUp(() {
       mockVideoRepository = MockVideoRepository();
+      mockStorageService = MockStorageService();
       mockApiClient = MockApiClient();
       controller = UploadController(
         videoRepository: mockVideoRepository,
+        storageService: mockStorageService,
         apiClient: mockApiClient,
       );
     });
@@ -489,14 +493,16 @@ void main() {
       test('does not upload when canUpload is false', () async {
         await controller.upload();
 
+        verifyNever(mockStorageService.uploadToStorage(any));
         verifyNever(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
         );
       });
@@ -515,20 +521,24 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockStorageService.uploadToStorage(any),
+        ).thenAnswer((_) async => 'storage-ref');
+        when(
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
         ).thenAnswer((_) async => 'backend-ref');
 
         final future = controller.upload();
 
-        // Check intermediate state
-        expect(controller.state.status, UploadStatus.uploading);
+        // Check intermediate state (uploadingToStorage is the first phase)
+        expect(controller.state.status, UploadStatus.uploadingToStorage);
 
         await future;
       });
@@ -553,26 +563,32 @@ void main() {
         );
 
         when(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockStorageService.uploadToStorage(any),
+        ).thenAnswer((_) async => 'storage-ref');
+        when(
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
         ).thenAnswer((_) async => 'backend-ref');
 
         await controller.upload();
 
+        verify(mockStorageService.uploadToStorage(mockVideo)).called(1);
         verify(
-          mockApiClient.uploadVideo(
-            video: mockVideo,
+          mockApiClient.submitAnalysisJob(
+            storageReference: 'storage-ref',
             email: 'test@example.com',
             danceStyle: DanceStyle.waltz,
             timestamps: controller.state.timestamps,
             trimStart: Duration.zero,
             trimEnd: null,
+            videoDuration: mockVideo.duration,
           ),
         ).called(1);
       });
@@ -591,13 +607,17 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockStorageService.uploadToStorage(any),
+        ).thenAnswer((_) async => 'storage-ref');
+        when(
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
         ).thenAnswer((_) async => 'backend-ref');
 
@@ -620,13 +640,17 @@ void main() {
         controller.updateDanceStyle(DanceStyle.samba);
 
         when(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockStorageService.uploadToStorage(any),
+        ).thenAnswer((_) async => 'storage-ref');
+        when(
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
         ).thenAnswer((_) async => 'backend-ref-123');
 
@@ -637,6 +661,29 @@ void main() {
           'backend-ref-123',
         );
         expect(controller.state.videoMetadata!.uploadedAt, isNotNull);
+      });
+
+      test('sets error status on storage exception', () async {
+        final mockVideo = SelectedVideo(
+          xFile: XFile('test.mp4'),
+          duration: const Duration(seconds: 10),
+          sizeBytes: 1024 * 1024,
+        );
+
+        when(
+          mockVideoRepository.pickVideo(any),
+        ).thenAnswer((_) async => mockVideo);
+        await controller.pickVideo(ImageSource.gallery);
+        controller.updateDanceStyle(DanceStyle.waltz);
+
+        when(
+          mockStorageService.uploadToStorage(any),
+        ).thenThrow(const StorageException('Storage upload failed'));
+
+        await controller.upload();
+
+        expect(controller.state.status, UploadStatus.error);
+        expect(controller.state.errorMessage, 'Storage upload failed');
       });
 
       test('sets error status on API exception', () async {
@@ -653,20 +700,24 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiClient.uploadVideo(
-            video: anyNamed('video'),
+          mockStorageService.uploadToStorage(any),
+        ).thenAnswer((_) async => 'storage-ref');
+        when(
+          mockApiClient.submitAnalysisJob(
+            storageReference: anyNamed('storageReference'),
             email: anyNamed('email'),
             danceStyle: anyNamed('danceStyle'),
             timestamps: anyNamed('timestamps'),
             trimStart: anyNamed('trimStart'),
             trimEnd: anyNamed('trimEnd'),
+            videoDuration: anyNamed('videoDuration'),
           ),
-        ).thenThrow(const ApiException('Upload failed'));
+        ).thenThrow(const ApiException('Analysis job failed'));
 
         await controller.upload();
 
         expect(controller.state.status, UploadStatus.error);
-        expect(controller.state.errorMessage, 'Upload failed');
+        expect(controller.state.errorMessage, 'Analysis job failed');
       });
     });
   });

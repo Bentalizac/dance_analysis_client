@@ -5,6 +5,7 @@ import '../../../../models/dance_style.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
 import '../../../../shared/services/api_client.dart';
+import '../../../../shared/services/storage_service.dart';
 import '../../../../shared/services/video_service.dart';
 import '../../domain/repositories/video_repository.dart';
 import 'upload_state.dart';
@@ -33,11 +34,14 @@ import 'upload_state.dart';
 class UploadController extends ChangeNotifier {
   UploadController({
     required VideoRepository videoRepository,
+    required StorageService storageService,
     required ApiClient apiClient,
   }) : _videoRepository = videoRepository,
+       _storageService = storageService,
        _apiClient = apiClient;
 
   final VideoRepository _videoRepository;
+  final StorageService _storageService;
   final ApiClient _apiClient;
 
   UploadState _state = UploadState.initial();
@@ -301,21 +305,53 @@ class UploadController extends ChangeNotifier {
       return;
     }
 
-    _state = _state.copyWith(status: UploadStatus.uploading, clearError: true);
+    // Phase 1: Upload video to storage bucket
+    _state = _state.copyWith(
+      status: UploadStatus.uploadingToStorage,
+      clearError: true,
+    );
+    notifyListeners();
+
+    String storageRef;
+    try {
+      storageRef = await _storageService.uploadToStorage(_state.video!);
+      _state = _state.copyWith(storageReference: storageRef);
+      notifyListeners();
+    } on StorageException catch (e) {
+      _state = _state.copyWith(
+        status: UploadStatus.error,
+        errorMessage: e.message,
+      );
+      notifyListeners();
+      return;
+    } catch (e) {
+      _state = _state.copyWith(
+        status: UploadStatus.error,
+        errorMessage: 'Unexpected error during storage upload: $e',
+      );
+      notifyListeners();
+      return;
+    }
+
+    // Phase 2: Submit analysis job to backend
+    _state = _state.copyWith(
+      status: UploadStatus.submittingJob,
+      clearError: true,
+    );
     notifyListeners();
 
     try {
-      // Upload video with metadata (timestamps and trim information)
-      final backendRef = await _apiClient.uploadVideo(
-        video: _state.video!,
+      final backendRef = await _apiClient.submitAnalysisJob(
+        storageReference: storageRef,
         email: _state.email.trim(),
         danceStyle: _state.danceStyle!,
         timestamps: _state.timestamps,
         trimStart: _state.trimStart,
         trimEnd: _state.trimEnd,
+        videoDuration: _state.video!.duration,
       );
 
-      // Update metadata with upload information
+      // Update metadata with upload and job information
       final updatedMetadata = _state.videoMetadata?.copyWith(
         uploadedAt: DateTime.now(),
         backendReference: backendRef,
@@ -333,7 +369,7 @@ class UploadController extends ChangeNotifier {
     } catch (e) {
       _state = _state.copyWith(
         status: UploadStatus.error,
-        errorMessage: 'Unexpected error during upload: $e',
+        errorMessage: 'Unexpected error during job submission: $e',
       );
     }
     notifyListeners();

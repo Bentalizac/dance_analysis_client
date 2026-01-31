@@ -13,7 +13,8 @@ enum UploadStatus {
   pickingVideo,
   validating,
   ready,
-  uploading,
+  uploadingToStorage,
+  submittingJob,
   processing,
   success,
   error,
@@ -55,6 +56,7 @@ class UploadState {
     required this.isAddingTimestamp,
     required this.editingTimestampId,
     required this.danceStyle,
+    required this.storageReference,
   });
 
   factory UploadState.initial() => const UploadState(
@@ -70,6 +72,7 @@ class UploadState {
     isAddingTimestamp: false,
     editingTimestampId: null,
     danceStyle: null,
+    storageReference: null,
   );
 
   final UploadStatus status;
@@ -99,6 +102,9 @@ class UploadState {
   /// Selected dance style for analysis
   final DanceStyle? danceStyle;
 
+  /// Storage reference/URL from the storage bucket upload
+  final String? storageReference;
+
   bool get hasVideo => video != null;
 
   /// Whether the user can attempt an upload.
@@ -107,7 +113,9 @@ class UploadState {
 
   /// Internal convenience for disabling UI while work is in progress.
   bool get _isBusy => switch (status) {
-    UploadStatus.uploading || UploadStatus.processing => true,
+    UploadStatus.uploadingToStorage ||
+    UploadStatus.submittingJob ||
+    UploadStatus.processing => true,
     _ => false,
   };
 
@@ -137,7 +145,8 @@ class UploadState {
     UploadStatus.pickingVideo => 'Picking video…',
     UploadStatus.validating => 'Validating video…',
     UploadStatus.ready => 'Ready to upload',
-    UploadStatus.uploading => 'Uploading…',
+    UploadStatus.uploadingToStorage => 'Uploading to storage…',
+    UploadStatus.submittingJob => 'Submitting for analysis…',
     UploadStatus.processing => 'Processing on server…',
     UploadStatus.success => 'Upload complete',
     UploadStatus.error => 'Error',
@@ -162,6 +171,8 @@ class UploadState {
     bool clearEditingTimestampId = false,
     DanceStyle? danceStyle,
     bool clearDanceStyle = false,
+    String? storageReference,
+    bool clearStorageReference = false,
   }) {
     return UploadState(
       status: status ?? this.status,
@@ -180,6 +191,9 @@ class UploadState {
           ? null
           : (editingTimestampId ?? this.editingTimestampId),
       danceStyle: clearDanceStyle ? null : (danceStyle ?? this.danceStyle),
+      storageReference: clearStorageReference
+          ? null
+          : (storageReference ?? this.storageReference),
     );
   }
 }
