@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'config/routes.dart';
+import 'features/upload/data/repositories/http_storage_repository.dart';
+import 'features/upload/domain/repositories/storage_repository.dart';
 import 'features/upload/domain/repositories/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_client.dart';
-import 'shared/services/storage_service.dart';
 import 'shared/services/video_service.dart';
 
 void main() {
@@ -114,9 +115,11 @@ class MyApp extends StatelessWidget {
       providers: [
         // Provide services as singletons
         Provider<VideoService>(create: (_) => VideoService()),
-        Provider<StorageService>(create: (_) => StorageService()),
         Provider<ApiClient>(create: (_) => ApiClient()),
         // Provide repositories
+        Provider<StorageRepository>(
+          create: (_) => HttpStorageRepository(),
+        ),
         ProxyProvider<VideoService, VideoRepository>(
           update: (context, videoService, previous) =>
               VideoRepository(videoService),

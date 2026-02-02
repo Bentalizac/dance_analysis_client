@@ -1,9 +1,9 @@
+import 'package:dance_analysis_client/features/upload/domain/repositories/storage_repository.dart';
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
 import 'package:dance_analysis_client/models/dance_style.dart';
 import 'package:dance_analysis_client/shared/services/api_client.dart';
-import 'package:dance_analysis_client/shared/services/storage_service.dart';
 import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,21 +13,21 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoRepository, StorageService, ApiClient])
+@GenerateMocks([VideoRepository, StorageRepository, ApiClient])
 void main() {
   group('UploadController', () {
     late MockVideoRepository mockVideoRepository;
-    late MockStorageService mockStorageService;
+    late MockStorageRepository mockStorageRepository;
     late MockApiClient mockApiClient;
     late UploadController controller;
 
     setUp(() {
       mockVideoRepository = MockVideoRepository();
-      mockStorageService = MockStorageService();
+      mockStorageRepository = MockStorageRepository();
       mockApiClient = MockApiClient();
       controller = UploadController(
         videoRepository: mockVideoRepository,
-        storageService: mockStorageService,
+        storageRepository: mockStorageRepository,
         apiClient: mockApiClient,
       );
     });
@@ -493,7 +493,7 @@ void main() {
       test('does not upload when canUpload is false', () async {
         await controller.upload();
 
-        verifyNever(mockStorageService.uploadToStorage(any));
+        verifyNever(mockStorageRepository.uploadToStorage(any));
         verifyNever(
           mockApiClient.submitAnalysisJob(
             storageReference: anyNamed('storageReference'),
@@ -521,7 +521,7 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenAnswer((_) async => 'storage-ref');
         when(
           mockApiClient.submitAnalysisJob(
@@ -563,7 +563,7 @@ void main() {
         );
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenAnswer((_) async => 'storage-ref');
         when(
           mockApiClient.submitAnalysisJob(
@@ -579,7 +579,7 @@ void main() {
 
         await controller.upload();
 
-        verify(mockStorageService.uploadToStorage(mockVideo)).called(1);
+        verify(mockStorageRepository.uploadToStorage(mockVideo)).called(1);
         verify(
           mockApiClient.submitAnalysisJob(
             storageReference: 'storage-ref',
@@ -607,7 +607,7 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenAnswer((_) async => 'storage-ref');
         when(
           mockApiClient.submitAnalysisJob(
@@ -640,7 +640,7 @@ void main() {
         controller.updateDanceStyle(DanceStyle.samba);
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenAnswer((_) async => 'storage-ref');
         when(
           mockApiClient.submitAnalysisJob(
@@ -677,7 +677,7 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenThrow(const StorageException('Storage upload failed'));
 
         await controller.upload();
@@ -700,7 +700,7 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageService.uploadToStorage(any),
+          mockStorageRepository.uploadToStorage(any),
         ).thenAnswer((_) async => 'storage-ref');
         when(
           mockApiClient.submitAnalysisJob(

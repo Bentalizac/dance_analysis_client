@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../shared/services/api_client.dart';
-import '../../../../shared/services/storage_service.dart';
+import '../../domain/repositories/storage_repository.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../controllers/upload_controller.dart';
 import '../controllers/video_player_manager.dart';
@@ -27,7 +27,7 @@ class UploadPage extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => UploadController(
             videoRepository: context.read<VideoRepository>(),
-            storageService: context.read<StorageService>(),
+            storageRepository: context.read<StorageRepository>(),
             apiClient: context.read<ApiClient>(),
           ),
         ),

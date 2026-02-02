@@ -5,6 +5,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
+import 'package:dance_analysis_client/features/upload/domain/repositories/storage_repository.dart'
+    as _i6;
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart'
     as _i2;
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
@@ -12,8 +14,6 @@ import 'package:dance_analysis_client/features/upload/presentation/controllers/u
 import 'package:dance_analysis_client/models/dance_style.dart' as _i9;
 import 'package:dance_analysis_client/models/video_timestamp.dart' as _i10;
 import 'package:dance_analysis_client/shared/services/api_client.dart' as _i8;
-import 'package:dance_analysis_client/shared/services/storage_service.dart'
-    as _i6;
 import 'package:image_picker/image_picker.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
@@ -50,11 +50,11 @@ class MockVideoRepository extends _i1.Mock implements _i2.VideoRepository {
           as _i3.Future<_i4.SelectedVideo?>);
 }
 
-/// A class which mocks [StorageService].
+/// A class which mocks [StorageRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStorageService extends _i1.Mock implements _i6.StorageService {
-  MockStorageService() {
+class MockStorageRepository extends _i1.Mock implements _i6.StorageRepository {
+  MockStorageRepository() {
     _i1.throwOnMissingStub(this);
   }
 

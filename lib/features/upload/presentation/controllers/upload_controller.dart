@@ -5,8 +5,8 @@ import '../../../../models/dance_style.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
 import '../../../../shared/services/api_client.dart';
-import '../../../../shared/services/storage_service.dart';
 import '../../../../shared/services/video_service.dart';
+import '../../domain/repositories/storage_repository.dart';
 import '../../domain/repositories/video_repository.dart';
 import 'upload_state.dart';
 
@@ -34,14 +34,14 @@ import 'upload_state.dart';
 class UploadController extends ChangeNotifier {
   UploadController({
     required VideoRepository videoRepository,
-    required StorageService storageService,
+    required StorageRepository storageRepository,
     required ApiClient apiClient,
-  }) : _videoRepository = videoRepository,
-       _storageService = storageService,
-       _apiClient = apiClient;
+  })  : _videoRepository = videoRepository,
+        _storageRepository = storageRepository,
+        _apiClient = apiClient;
 
   final VideoRepository _videoRepository;
-  final StorageService _storageService;
+  final StorageRepository _storageRepository;
   final ApiClient _apiClient;
 
   UploadState _state = UploadState.initial();
@@ -314,7 +314,7 @@ class UploadController extends ChangeNotifier {
 
     String storageRef;
     try {
-      storageRef = await _storageService.uploadToStorage(_state.video!);
+      storageRef = await _storageRepository.uploadToStorage(_state.video!);
       _state = _state.copyWith(storageReference: storageRef);
       notifyListeners();
     } on StorageException catch (e) {
