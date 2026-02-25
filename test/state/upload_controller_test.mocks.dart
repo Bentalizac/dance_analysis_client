@@ -3,20 +3,16 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i3;
+import 'dart:async' as _i4;
 
-import 'package:dance_analysis_client/features/upload/domain/repositories/storage_repository.dart'
-    as _i6;
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart'
-    as _i2;
+    as _i3;
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
-    as _i4;
-import 'package:dance_analysis_client/models/dance_style.dart' as _i9;
-import 'package:dance_analysis_client/models/video_timestamp.dart' as _i10;
-import 'package:dance_analysis_client/shared/services/api_client.dart' as _i8;
-import 'package:image_picker/image_picker.dart' as _i5;
+    as _i5;
+import 'package:dance_analysis_client/generated/api/export.dart' as _i2;
+import 'package:dance_analysis_client/shared/services/api_service.dart' as _i7;
+import 'package:image_picker/image_picker.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -33,74 +29,84 @@ import 'package:mockito/src/dummies.dart' as _i7;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
+class _FakeRestClient_0 extends _i1.SmartFake implements _i2.RestClient {
+  _FakeRestClient_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [VideoRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockVideoRepository extends _i1.Mock implements _i2.VideoRepository {
+class MockVideoRepository extends _i1.Mock implements _i3.VideoRepository {
   MockVideoRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<_i4.SelectedVideo?> pickVideo(_i5.ImageSource? source) =>
+  _i4.Future<_i5.SelectedVideo?> pickVideo(_i6.ImageSource? source) =>
       (super.noSuchMethod(
             Invocation.method(#pickVideo, [source]),
-            returnValue: _i3.Future<_i4.SelectedVideo?>.value(),
+            returnValue: _i4.Future<_i5.SelectedVideo?>.value(),
           )
-          as _i3.Future<_i4.SelectedVideo?>);
+          as _i4.Future<_i5.SelectedVideo?>);
 }
 
-/// A class which mocks [StorageRepository].
+/// A class which mocks [ApiService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStorageRepository extends _i1.Mock implements _i6.StorageRepository {
-  MockStorageRepository() {
+class MockApiService extends _i1.Mock implements _i7.ApiService {
+  MockApiService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<String> uploadToStorage(_i4.SelectedVideo? video) =>
+  _i2.RestClient get client =>
       (super.noSuchMethod(
-            Invocation.method(#uploadToStorage, [video]),
-            returnValue: _i3.Future<String>.value(
-              _i7.dummyValue<String>(
-                this,
-                Invocation.method(#uploadToStorage, [video]),
-              ),
-            ),
+            Invocation.getter(#client),
+            returnValue: _FakeRestClient_0(this, Invocation.getter(#client)),
           )
-          as _i3.Future<String>);
-}
-
-/// A class which mocks [ApiClient].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockApiClient extends _i1.Mock implements _i8.ApiClient {
-  MockApiClient() {
-    _i1.throwOnMissingStub(this);
-  }
+          as _i2.RestClient);
 
   @override
-  _i3.Future<String?> submitAnalysisJob({
-    required String? storageReference,
-    required String? email,
-    required _i9.DanceStyle? danceStyle,
-    List<_i10.VideoTimestamp>? timestamps = const [],
-    Duration? trimStart = Duration.zero,
-    Duration? trimEnd,
-    required Duration? videoDuration,
+  _i4.Future<String> uploadAndSubmitVideo(
+    _i5.SelectedVideo? video, {
+    void Function(
+      int,
+      int,
+    )? onSendProgress,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#submitAnalysisJob, [], {
-              #storageReference: storageReference,
-              #email: email,
-              #danceStyle: danceStyle,
-              #timestamps: timestamps,
-              #trimStart: trimStart,
-              #trimEnd: trimEnd,
-              #videoDuration: videoDuration,
-            }),
-            returnValue: _i3.Future<String?>.value(),
+        Invocation.method(
+          #uploadAndSubmitVideo,
+          [video],
+          {#onSendProgress: onSendProgress},
+        ),
+        returnValue: _i4.Future<String>.value(''),
+      ) as _i4.Future<String>);
+
+  @override
+  _i4.Future<Map<String, dynamic>> getJobStatus(String? jobId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getJobStatus, [jobId]),
+            returnValue: _i4.Future<Map<String, dynamic>>.value(
+              <String, dynamic>{},
+            ),
           )
-          as _i3.Future<String?>);
+          as _i4.Future<Map<String, dynamic>>);
+
+  @override
+  _i4.Future<Map<String, dynamic>> getJobResult(String? jobId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getJobResult, [jobId]),
+            returnValue: _i4.Future<Map<String, dynamic>>.value(
+              <String, dynamic>{},
+            ),
+          )
+          as _i4.Future<Map<String, dynamic>>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
 }

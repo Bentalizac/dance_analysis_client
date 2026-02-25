@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -6,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../../../../config/routes.dart';
 import '../../../../models/dance_style.dart';
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/widgets/discard_confirmation_dialog.dart';
 import '../../../../shared/widgets/timestamp_manager.dart';
 import '../controllers/upload_controller.dart';
@@ -25,6 +27,37 @@ class UploadPageContent extends StatefulWidget {
 
 class _UploadPageContentState extends State<UploadPageContent> {
   late final TextEditingController _emailController;
+
+  bool _isCheckingAuthForPicker = false;
+
+  Future<bool> _ensureAuthenticatedForUpload() async {
+    final auth = context.read<AuthService>();
+
+    // Already signed in – allow immediately
+    if (auth.isAuthenticated) {
+      return true;
+    }
+
+    setState(() {
+      _isCheckingAuthForPicker = true;
+    });
+
+    try {
+      // Push login page and wait for result
+      final result = await context.push<bool>('/login');
+
+      // Consider it successful only if:
+      // - login route returned true AND
+      // - auth state now reports authenticated
+      return result == true && mounted && auth.isAuthenticated;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingAuthForPicker = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -202,7 +235,13 @@ class _UploadPageContentState extends State<UploadPageContent> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => controller.pickVideo(ImageSource.gallery),
+                  onPressed: _isCheckingAuthForPicker
+                      ? null
+                      : () async {
+                          final allowed = await _ensureAuthenticatedForUpload();
+                          if (!allowed || !mounted) return;
+                          controller.pickVideo(ImageSource.gallery);
+                        },
                   icon: const Icon(Icons.folder_open),
                   label: const Text('Gallery'),
                   style: ElevatedButton.styleFrom(
@@ -215,7 +254,13 @@ class _UploadPageContentState extends State<UploadPageContent> {
               const SizedBox(width: AppDesignSystem.spacingMd),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => controller.pickVideo(ImageSource.camera),
+                  onPressed: _isCheckingAuthForPicker
+                      ? null
+                      : () async {
+                          final allowed = await _ensureAuthenticatedForUpload();
+                          if (!allowed || !mounted) return;
+                          controller.pickVideo(ImageSource.camera);
+                        },
                   icon: const Icon(Icons.videocam),
                   label: const Text('Record'),
                   style: ElevatedButton.styleFrom(
@@ -409,30 +454,60 @@ class _UploadPageContentState extends State<UploadPageContent> {
         state.status == UploadStatus.uploadingToStorage ||
         state.status == UploadStatus.submittingJob;
 
-    return ElevatedButton(
-      onPressed: state.canUpload && !isUploading
-          ? () => controller.upload()
-          : null,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDesignSystem.spacingMd,
+    if (!isUploading) {
+      return ElevatedButton(
+        onPressed: state.canUpload ? () => controller.upload() : null,
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppDesignSystem.spacingMd,
+          ),
+          backgroundColor: AppDesignSystem.accentBlue,
+          disabledBackgroundColor: AppDesignSystem.backgroundMedium,
         ),
-        backgroundColor: AppDesignSystem.accentBlue,
-        disabledBackgroundColor: AppDesignSystem.backgroundMedium,
-      ),
-      child: isUploading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Text(
-              'Upload Video',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: const Text(
+          'Upload Video',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+
+    // Progress bar that fills the button shape from left to right
+    final progress = (state.uploadProgress ?? 0.0).clamp(0.0, 1.0);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppDesignSystem.radiusPill),
+      child: SizedBox(
+        height: 52,
+        child: Stack(
+          children: [
+            // Background track
+            const Positioned.fill(
+              child: ColoredBox(color: AppDesignSystem.backgroundMedium),
             ),
+            // Progress fill
+            FractionallySizedBox(
+              widthFactor: progress,
+              heightFactor: 1.0,
+              child: const ColoredBox(color: AppDesignSystem.accentBlue),
+            ),
+            // Label
+            Center(
+              child: Text(
+                state.status == UploadStatus.submittingJob
+                    ? 'Submitting…'
+                    : progress >= 1.0
+                        ? 'Processing…'
+                        : 'Uploading… ${(progress * 100).toInt()}%',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignSystem.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

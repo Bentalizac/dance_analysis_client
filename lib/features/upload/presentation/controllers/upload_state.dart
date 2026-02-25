@@ -57,6 +57,7 @@ class UploadState {
     required this.editingTimestampId,
     required this.danceStyle,
     required this.storageReference,
+    required this.uploadProgress,
   });
 
   factory UploadState.initial() => const UploadState(
@@ -73,6 +74,7 @@ class UploadState {
     editingTimestampId: null,
     danceStyle: null,
     storageReference: null,
+    uploadProgress: null,
   );
 
   final UploadStatus status;
@@ -80,6 +82,7 @@ class UploadState {
   final bool isEmailValid;
   final SelectedVideo? video;
   final String? errorMessage;
+  final double? uploadProgress;
 
   /// User-defined timestamps marking dance steps or routine segments
   final List<VideoTimestamp> timestamps;
@@ -173,6 +176,8 @@ class UploadState {
     bool clearDanceStyle = false,
     String? storageReference,
     bool clearStorageReference = false,
+    double? uploadProgress,
+    bool clearUploadProgress = false,
   }) {
     return UploadState(
       status: status ?? this.status,
@@ -194,6 +199,9 @@ class UploadState {
       storageReference: clearStorageReference
           ? null
           : (storageReference ?? this.storageReference),
+      uploadProgress: clearUploadProgress
+          ? null
+          : (uploadProgress ?? this.uploadProgress),
     );
   }
 }

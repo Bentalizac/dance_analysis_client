@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/pages/login_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/results/presentation/pages/demo_results_page.dart';
 import '../features/upload/presentation/pages/upload_page.dart';
 import '../shared/design_system/theme.dart';
+import '../shared/services/auth_service.dart';
 
 /// Global key to access navigator state for upload guard
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -18,6 +20,21 @@ void registerUploadPageGuard(Future<bool> Function()? callback) {
   _uploadPageCanLeaveCallback = callback;
 }
 
+/// Simple singleton-like access to AuthService for router-level guards.
+///
+/// go_router redirects do not receive a BuildContext, so we can't use the
+/// usual Provider lookup there. To keep things simple for now, we allow the
+/// auth service to be registered once at app start and then referenced by
+/// router guards.
+///
+/// In main.dart, after creating AuthService, call:
+///   AuthServiceRegistry.instance = authService;
+class AuthServiceRegistry {
+  AuthServiceRegistry._();
+
+  static AuthService? instance;
+}
+
 /// App routing configuration using go_router.
 ///
 /// This provides:
@@ -29,7 +46,50 @@ void registerUploadPageGuard(Future<bool> Function()? callback) {
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
+  // Global redirect used for simple auth gating on specific routes.
+  //
+  // We treat the following as "protected" routes:
+  //   - /upload
+  //   - /history
+  //   - /profile
+  //
+  // If the user is not authenticated and attempts to access one of these,
+  // they are redirected to /login?from=<original-path>. After a successful
+  // login, the login page can navigate back to `from` if desired.
+  redirect: (context, state) {
+    final auth = AuthServiceRegistry.instance;
+    final isLoggedIn = auth?.isAuthenticated ?? false;
+
+    final goingTo = state.uri.path;
+
+    // Never redirect from login itself to avoid loops.
+    if (goingTo == '/login') {
+      return null;
+    }
+
+    // Only gate the specific routes we care about.
+    final isProtected =
+        goingTo == '/upload' || goingTo == '/history' || goingTo == '/profile';
+
+    if (!isLoggedIn && isProtected) {
+      final from = Uri.encodeComponent(state.uri.toString());
+      return '/login?from=$from';
+    }
+
+    // No redirect.
+    return null;
+  },
   routes: [
+    // Public / standalone routes (outside main scaffold)
+    GoRoute(
+      path: '/login',
+      name: 'login',
+      builder: (context, state) {
+        // Optional "from" parameter so login page can send the user back.
+        final from = state.uri.queryParameters['from'];
+        return LoginPage(initialRedirectPath: from);
+      },
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return _MainScaffold(child: child);

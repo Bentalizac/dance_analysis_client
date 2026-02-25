@@ -4,10 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../models/dance_style.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
-import '../../../../shared/services/api_client.dart';
 import '../../../../shared/services/video_service.dart';
-import '../../domain/repositories/storage_repository.dart';
 import '../../domain/repositories/video_repository.dart';
+import '../../../../shared/services/api_service.dart';
 import 'upload_state.dart';
 
 /// ChangeNotifier that coordinates upload flow including video selection,
@@ -34,15 +33,12 @@ import 'upload_state.dart';
 class UploadController extends ChangeNotifier {
   UploadController({
     required VideoRepository videoRepository,
-    required StorageRepository storageRepository,
-    required ApiClient apiClient,
-  })  : _videoRepository = videoRepository,
-        _storageRepository = storageRepository,
-        _apiClient = apiClient;
+    required ApiService apiService,
+  }) : _videoRepository = videoRepository,
+       _apiService = apiService;
 
   final VideoRepository _videoRepository;
-  final StorageRepository _storageRepository;
-  final ApiClient _apiClient;
+  final ApiService _apiService;
 
   UploadState _state = UploadState.initial();
 
@@ -269,14 +265,13 @@ class UploadController extends ChangeNotifier {
   /// Clear the currently selected video and reset state
   void clearVideo() {
     _state = _state.copyWith(
-      clearVideo: true,
-      clearVideoMetadata: true,
       status: UploadStatus.idle,
       timestamps: [],
       trimStart: Duration.zero,
       clearTrimEnd: true,
       clearError: true,
       clearDanceStyle: true,
+      clearUploadProgress: true,
     );
     notifyListeners();
   }
@@ -305,71 +300,53 @@ class UploadController extends ChangeNotifier {
       return;
     }
 
-    // Phase 1: Upload video to storage bucket
+    // Upload video via presigned URL flow and submit for analysis
     _state = _state.copyWith(
       status: UploadStatus.uploadingToStorage,
       clearError: true,
-    );
-    notifyListeners();
-
-    String storageRef;
-    try {
-      storageRef = await _storageRepository.uploadToStorage(_state.video!);
-      _state = _state.copyWith(storageReference: storageRef);
-      notifyListeners();
-    } on StorageException catch (e) {
-      _state = _state.copyWith(
-        status: UploadStatus.error,
-        errorMessage: e.message,
-      );
-      notifyListeners();
-      return;
-    } catch (e) {
-      _state = _state.copyWith(
-        status: UploadStatus.error,
-        errorMessage: 'Unexpected error during storage upload: $e',
-      );
-      notifyListeners();
-      return;
-    }
-
-    // Phase 2: Submit analysis job to backend
-    _state = _state.copyWith(
-      status: UploadStatus.submittingJob,
-      clearError: true,
+      uploadProgress: 0.0,
     );
     notifyListeners();
 
     try {
-      final backendRef = await _apiClient.submitAnalysisJob(
-        storageReference: storageRef,
-        email: _state.email.trim(),
-        danceStyle: _state.danceStyle!,
-        timestamps: _state.timestamps,
-        trimStart: _state.trimStart,
-        trimEnd: _state.trimEnd,
-        videoDuration: _state.video!.duration,
+      final jobId = await _apiService.uploadAndSubmitVideo(
+        _state.video!,
+        onSendProgress: (sent, total) {
+          final progress = total > 0 ? (sent / total).clamp(0.0, 1.0) : null;
+
+          // Only update state if we're still in uploading status to avoid
+          // clobbering later states like success/error.
+          if (_state.status == UploadStatus.uploadingToStorage &&
+              progress != null) {
+            _state = _state.copyWith(uploadProgress: progress);
+            notifyListeners();
+          }
+        },
       );
 
-      // Update metadata with upload and job information
+      // Update metadata with job information
       final updatedMetadata = _state.videoMetadata?.copyWith(
         uploadedAt: DateTime.now(),
-        backendReference: backendRef,
+        backendReference: jobId,
       );
 
       _state = _state.copyWith(
         status: UploadStatus.success,
         videoMetadata: updatedMetadata,
+        storageReference: jobId,
+        clearUploadProgress: true,
       );
-    } on ApiException catch (e) {
+    } on ApiServiceException catch (e) {
       _state = _state.copyWith(
         status: UploadStatus.error,
         errorMessage: e.message,
+        clearUploadProgress: true,
       );
     } catch (e) {
       _state = _state.copyWith(
         status: UploadStatus.error,
-        errorMessage: 'Unexpected error during job submission: $e',
+        errorMessage: 'Unexpected error during upload: $e',
+        clearUploadProgress: true,
       );
     }
     notifyListeners();

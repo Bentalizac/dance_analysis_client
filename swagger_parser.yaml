@@ -1,0 +1,13 @@
+# swagger_parser configuration for generating Dart API client
+swagger_parser:
+  schema_path: ../dance_analysis_server/docs/openapi.json
+  output_directory: lib/generated/api
+  language: dart
+  
+  # Client generation options
+  client_postfix: Client
+  put_clients_in_folder: true
+  
+  # Model generation options
+  squish_clients: false
+  include_all_paths: true

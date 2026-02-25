@@ -1,0 +1,14 @@
+# OpenAPI Generator configuration for Dart
+# See https://openapi-generator.tech/docs/generators/dart-dio/ for options
+
+# General settings
+pubName: dance_analysis_api
+pubVersion: 1.0.0
+pubDescription: "Dart API client for Dance Analysis Service"
+pubAuthor: "Dance Coach Team"
+
+# Generator specific settings (dart-dio)
+serializationLibrary: dio
+dateSerialization: iso8601
+nullableFields: true
+useEnumExtension: true

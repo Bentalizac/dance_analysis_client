@@ -1,9 +1,8 @@
-import 'package:dance_analysis_client/features/upload/domain/repositories/storage_repository.dart';
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
 import 'package:dance_analysis_client/models/dance_style.dart';
-import 'package:dance_analysis_client/shared/services/api_client.dart';
+import 'package:dance_analysis_client/shared/services/api_service.dart';
 import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,22 +12,19 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoRepository, StorageRepository, ApiClient])
+@GenerateMocks([VideoRepository, ApiService])
 void main() {
   group('UploadController', () {
     late MockVideoRepository mockVideoRepository;
-    late MockStorageRepository mockStorageRepository;
-    late MockApiClient mockApiClient;
+    late MockApiService mockApiService;
     late UploadController controller;
 
     setUp(() {
       mockVideoRepository = MockVideoRepository();
-      mockStorageRepository = MockStorageRepository();
-      mockApiClient = MockApiClient();
+      mockApiService = MockApiService();
       controller = UploadController(
         videoRepository: mockVideoRepository,
-        storageRepository: mockStorageRepository,
-        apiClient: mockApiClient,
+        apiService: mockApiService,
       );
     });
 
@@ -493,18 +489,7 @@ void main() {
       test('does not upload when canUpload is false', () async {
         await controller.upload();
 
-        verifyNever(mockStorageRepository.uploadToStorage(any));
-        verifyNever(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        );
+        verifyNever(mockApiService.uploadAndSubmitVideo(any));
       });
 
       test('sets uploading status during upload', () async {
@@ -521,19 +506,8 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenAnswer((_) async => 'storage-ref');
-        when(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        ).thenAnswer((_) async => 'backend-ref');
+          mockApiService.uploadAndSubmitVideo(any),
+        ).thenAnswer((_) async => 'job-id');
 
         final future = controller.upload();
 
@@ -543,7 +517,7 @@ void main() {
         await future;
       });
 
-      test('calls API client with correct parameters', () async {
+      test('calls API service with video', () async {
         final mockVideo = SelectedVideo(
           xFile: XFile('test.mp4'),
           duration: const Duration(seconds: 10),
@@ -563,34 +537,12 @@ void main() {
         );
 
         when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenAnswer((_) async => 'storage-ref');
-        when(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        ).thenAnswer((_) async => 'backend-ref');
+          mockApiService.uploadAndSubmitVideo(any),
+        ).thenAnswer((_) async => 'job-id');
 
         await controller.upload();
 
-        verify(mockStorageRepository.uploadToStorage(mockVideo)).called(1);
-        verify(
-          mockApiClient.submitAnalysisJob(
-            storageReference: 'storage-ref',
-            email: 'test@example.com',
-            danceStyle: DanceStyle.waltz,
-            timestamps: controller.state.timestamps,
-            trimStart: Duration.zero,
-            trimEnd: null,
-            videoDuration: mockVideo.duration,
-          ),
-        ).called(1);
+        verify(mockApiService.uploadAndSubmitVideo(mockVideo)).called(1);
       });
 
       test('sets success status on successful upload', () async {
@@ -607,26 +559,15 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenAnswer((_) async => 'storage-ref');
-        when(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        ).thenAnswer((_) async => 'backend-ref');
+          mockApiService.uploadAndSubmitVideo(any),
+        ).thenAnswer((_) async => 'job-id-123');
 
         await controller.upload();
 
         expect(controller.state.status, UploadStatus.success);
       });
 
-      test('updates metadata with backend reference', () async {
+      test('updates metadata with job ID', () async {
         final mockVideo = SelectedVideo(
           xFile: XFile('test.mp4'),
           duration: const Duration(seconds: 10),
@@ -640,30 +581,19 @@ void main() {
         controller.updateDanceStyle(DanceStyle.samba);
 
         when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenAnswer((_) async => 'storage-ref');
-        when(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        ).thenAnswer((_) async => 'backend-ref-123');
+          mockApiService.uploadAndSubmitVideo(any),
+        ).thenAnswer((_) async => 'job-id-456');
 
         await controller.upload();
 
         expect(
           controller.state.videoMetadata!.backendReference,
-          'backend-ref-123',
+          'job-id-456',
         );
         expect(controller.state.videoMetadata!.uploadedAt, isNotNull);
       });
 
-      test('sets error status on storage exception', () async {
+      test('sets error status on API service exception', () async {
         final mockVideo = SelectedVideo(
           xFile: XFile('test.mp4'),
           duration: const Duration(seconds: 10),
@@ -677,47 +607,13 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenThrow(const StorageException('Storage upload failed'));
+          mockApiService.uploadAndSubmitVideo(any),
+        ).thenThrow(const ApiServiceException('Upload failed'));
 
         await controller.upload();
 
         expect(controller.state.status, UploadStatus.error);
-        expect(controller.state.errorMessage, 'Storage upload failed');
-      });
-
-      test('sets error status on API exception', () async {
-        final mockVideo = SelectedVideo(
-          xFile: XFile('test.mp4'),
-          duration: const Duration(seconds: 10),
-          sizeBytes: 1024 * 1024,
-        );
-
-        when(
-          mockVideoRepository.pickVideo(any),
-        ).thenAnswer((_) async => mockVideo);
-        await controller.pickVideo(ImageSource.gallery);
-        controller.updateDanceStyle(DanceStyle.waltz);
-
-        when(
-          mockStorageRepository.uploadToStorage(any),
-        ).thenAnswer((_) async => 'storage-ref');
-        when(
-          mockApiClient.submitAnalysisJob(
-            storageReference: anyNamed('storageReference'),
-            email: anyNamed('email'),
-            danceStyle: anyNamed('danceStyle'),
-            timestamps: anyNamed('timestamps'),
-            trimStart: anyNamed('trimStart'),
-            trimEnd: anyNamed('trimEnd'),
-            videoDuration: anyNamed('videoDuration'),
-          ),
-        ).thenThrow(const ApiException('Analysis job failed'));
-
-        await controller.upload();
-
-        expect(controller.state.status, UploadStatus.error);
-        expect(controller.state.errorMessage, 'Analysis job failed');
+        expect(controller.state.errorMessage, 'Upload failed');
       });
     });
   });
