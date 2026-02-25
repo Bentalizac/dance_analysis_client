@@ -45,6 +45,7 @@ dependencies:
   image_picker: any
   video_player: any
   web: any
+  shared_preferences: ^2.5.0
 
 dev_dependencies:
   flutter_test:

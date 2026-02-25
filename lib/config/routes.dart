@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/pages/login_page.dart';
+import '../features/history/presentation/pages/history_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/results/presentation/pages/demo_results_page.dart';
 import '../features/upload/presentation/pages/upload_page.dart';
@@ -116,7 +117,7 @@ final GoRouter appRouter = GoRouter(
           name: 'history',
           pageBuilder: (context, state) => NoTransitionPage(
             key: state.pageKey,
-            child: _StubPage(title: 'History', icon: Icons.history),
+            child: const HistoryPage(),
           ),
         ),
         GoRoute(

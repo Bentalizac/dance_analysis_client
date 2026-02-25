@@ -1,3 +1,4 @@
+import 'package:dance_analysis_client/features/history/data/history_repository.dart';
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_controller.dart';
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart';
@@ -12,19 +13,22 @@ import 'package:mockito/mockito.dart';
 import 'upload_controller_test.mocks.dart';
 
 // Generate mocks with: flutter pub run build_runner build
-@GenerateMocks([VideoRepository, ApiService])
+@GenerateMocks([VideoRepository, ApiService, HistoryRepository])
 void main() {
   group('UploadController', () {
     late MockVideoRepository mockVideoRepository;
     late MockApiService mockApiService;
+    late MockHistoryRepository mockHistoryRepository;
     late UploadController controller;
 
     setUp(() {
       mockVideoRepository = MockVideoRepository();
       mockApiService = MockApiService();
+      mockHistoryRepository = MockHistoryRepository();
       controller = UploadController(
         videoRepository: mockVideoRepository,
         apiService: mockApiService,
+        historyRepository: mockHistoryRepository,
       );
     });
 

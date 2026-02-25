@@ -5,14 +5,20 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
+import 'package:dance_analysis_client/features/history/data/history_repository.dart'
+    as _i9;
 import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart'
     as _i3;
 import 'package:dance_analysis_client/features/upload/presentation/controllers/upload_state.dart'
     as _i5;
 import 'package:dance_analysis_client/generated/api/export.dart' as _i2;
+import 'package:dance_analysis_client/models/feedback_item.dart' as _i12;
+import 'package:dance_analysis_client/models/history_item.dart' as _i11;
+import 'package:dance_analysis_client/models/submission.dart' as _i10;
 import 'package:dance_analysis_client/shared/services/api_service.dart' as _i7;
 import 'package:image_picker/image_picker.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -68,21 +74,40 @@ class MockApiService extends _i1.Mock implements _i7.ApiService {
           as _i2.RestClient);
 
   @override
+  void setAuthToken(String? token) => super.noSuchMethod(
+    Invocation.method(#setAuthToken, [token]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void clearAuthToken() => super.noSuchMethod(
+    Invocation.method(#clearAuthToken, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i4.Future<String> uploadAndSubmitVideo(
     _i5.SelectedVideo? video, {
-    void Function(
-      int,
-      int,
-    )? onSendProgress,
+    void Function(int, int)? onSendProgress,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #uploadAndSubmitVideo,
-          [video],
-          {#onSendProgress: onSendProgress},
-        ),
-        returnValue: _i4.Future<String>.value(''),
-      ) as _i4.Future<String>);
+            Invocation.method(
+              #uploadAndSubmitVideo,
+              [video],
+              {#onSendProgress: onSendProgress},
+            ),
+            returnValue: _i4.Future<String>.value(
+              _i8.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #uploadAndSubmitVideo,
+                  [video],
+                  {#onSendProgress: onSendProgress},
+                ),
+              ),
+            ),
+          )
+          as _i4.Future<String>);
 
   @override
   _i4.Future<Map<String, dynamic>> getJobStatus(String? jobId) =>
@@ -109,4 +134,49 @@ class MockApiService extends _i1.Mock implements _i7.ApiService {
     Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
+}
+
+/// A class which mocks [HistoryRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockHistoryRepository extends _i1.Mock implements _i9.HistoryRepository {
+  MockHistoryRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i4.Future<void> recordSubmission(_i10.Submission? submission) =>
+      (super.noSuchMethod(
+            Invocation.method(#recordSubmission, [submission]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  List<_i10.Submission> getLocalSubmissions() =>
+      (super.noSuchMethod(
+            Invocation.method(#getLocalSubmissions, []),
+            returnValue: <_i10.Submission>[],
+          )
+          as List<_i10.Submission>);
+
+  @override
+  _i4.Future<({List<_i11.HistoryItem> items, String? warning})> loadHistory() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadHistory, []),
+            returnValue:
+                _i4.Future<
+                  ({List<_i11.HistoryItem> items, String? warning})
+                >.value((items: <_i11.HistoryItem>[], warning: null)),
+          )
+          as _i4.Future<({List<_i11.HistoryItem> items, String? warning})>);
+
+  @override
+  List<_i12.FeedbackItem> getStubbedFeedback(String? jobId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getStubbedFeedback, [jobId]),
+            returnValue: <_i12.FeedbackItem>[],
+          )
+          as List<_i12.FeedbackItem>);
 }

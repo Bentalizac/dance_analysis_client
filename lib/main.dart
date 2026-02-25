@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/routes.dart';
+import 'features/history/data/history_local_data_source.dart';
+import 'features/history/data/history_repository.dart';
 import 'features/upload/domain/repositories/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_service.dart';
@@ -14,14 +17,17 @@ import 'shared/services/video_service.dart';
 void main() {
   // Set up global error handling
   runZonedGuarded(
-    () {
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      final prefs = await SharedPreferences.getInstance();
+
       // Capture Flutter framework errors
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
         _logError('Flutter Error', details.exception, details.stack);
       };
 
-      runApp(const MyApp());
+      runApp(MyApp(prefs: prefs));
     },
     // Capture async errors not caught by Flutter
     (error, stack) {
@@ -106,7 +112,9 @@ class _CustomErrorWidget extends StatelessWidget {
 ///
 /// Kept intentionally small: a single screen with basic theming.
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.prefs});
+
+  final SharedPreferences prefs;
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +137,17 @@ class MyApp extends StatelessWidget {
         ProxyProvider<VideoService, VideoRepository>(
           update: (context, videoService, previous) =>
               VideoRepository(videoService),
+        ),
+        // History data layer
+        Provider<HistoryLocalDataSource>(
+          create: (_) => HistoryLocalDataSource(prefs),
+        ),
+        ProxyProvider2<HistoryLocalDataSource, ApiService, HistoryRepository>(
+          update: (context, localDataSource, apiService, previous) =>
+              HistoryRepository(
+            localDataSource: localDataSource,
+            apiService: apiService,
+          ),
         ),
       ],
       child: MaterialApp.router(

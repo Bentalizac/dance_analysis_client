@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../generated/api/models/job_status.dart';
 import '../../../../models/dance_style.dart';
+import '../../../../models/submission.dart';
 import '../../../../models/video_metadata.dart';
 import '../../../../models/video_timestamp.dart';
 import '../../../../shared/services/video_service.dart';
+import '../../../history/data/history_repository.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../../../../shared/services/api_service.dart';
 import 'upload_state.dart';
@@ -34,11 +37,14 @@ class UploadController extends ChangeNotifier {
   UploadController({
     required VideoRepository videoRepository,
     required ApiService apiService,
+    required HistoryRepository historyRepository,
   }) : _videoRepository = videoRepository,
-       _apiService = apiService;
+       _apiService = apiService,
+       _historyRepository = historyRepository;
 
   final VideoRepository _videoRepository;
   final ApiService _apiService;
+  final HistoryRepository _historyRepository;
 
   UploadState _state = UploadState.initial();
 
@@ -336,6 +342,21 @@ class UploadController extends ChangeNotifier {
         storageReference: jobId,
         clearUploadProgress: true,
       );
+
+      // Record submission for History page
+      if (_state.videoMetadata != null) {
+        final submission = Submission(
+          localId: _state.videoMetadata!.id,
+          jobId: jobId,
+          localVideoPath: _state.videoMetadata!.originalPath,
+          totalDuration: _state.videoMetadata!.totalDuration,
+          danceStyle: _state.danceStyle,
+          createdAt: DateTime.now(),
+          lastKnownStatus: JobStatus.pending,
+        );
+        // Fire-and-forget: don't block upload success on persistence
+        _historyRepository.recordSubmission(submission);
+      }
     } on ApiServiceException catch (e) {
       _state = _state.copyWith(
         status: UploadStatus.error,

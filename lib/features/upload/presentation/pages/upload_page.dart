@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../shared/services/api_service.dart';
+import '../../../history/data/history_repository.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../controllers/upload_controller.dart';
 import '../controllers/video_player_manager.dart';
@@ -27,6 +28,7 @@ class UploadPage extends StatelessWidget {
           create: (context) => UploadController(
             videoRepository: context.read<VideoRepository>(),
             apiService: context.read<ApiService>(),
+            historyRepository: context.read<HistoryRepository>(),
           ),
         ),
       ],
