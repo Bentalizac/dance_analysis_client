@@ -86,6 +86,18 @@ class MockApiService extends _i1.Mock implements _i7.ApiService {
   );
 
   @override
+  void attachTokenRefreshInterceptor({
+    required _i4.Future<String?> Function()? refreshAccessToken,
+    required _i4.Future<void> Function()? onSessionExpired,
+  }) => super.noSuchMethod(
+    Invocation.method(#attachTokenRefreshInterceptor, [], {
+      #refreshAccessToken: refreshAccessToken,
+      #onSessionExpired: onSessionExpired,
+    }),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i4.Future<String> uploadAndSubmitVideo(
     _i5.SelectedVideo? video, {
     void Function(int, int)? onSendProgress,
@@ -173,10 +185,21 @@ class MockHistoryRepository extends _i1.Mock implements _i9.HistoryRepository {
           as _i4.Future<({List<_i11.HistoryItem> items, String? warning})>);
 
   @override
-  List<_i12.FeedbackItem> getStubbedFeedback(String? jobId) =>
+  _i4.Future<void> hideJob(String? jobId) =>
       (super.noSuchMethod(
-            Invocation.method(#getStubbedFeedback, [jobId]),
-            returnValue: <_i12.FeedbackItem>[],
+            Invocation.method(#hideJob, [jobId]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as List<_i12.FeedbackItem>);
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<List<_i12.FeedbackItem>> getJobFeedback(String? jobId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getJobFeedback, [jobId]),
+            returnValue: _i4.Future<List<_i12.FeedbackItem>>.value(
+              <_i12.FeedbackItem>[],
+            ),
+          )
+          as _i4.Future<List<_i12.FeedbackItem>>);
 }

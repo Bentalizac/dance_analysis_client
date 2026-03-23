@@ -174,7 +174,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
         color: AppDesignSystem.backgroundDark,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         border: Border.all(
-          color: AppDesignSystem.accentBlue.withValues(alpha: 0.3),
+          color: AppDesignSystem.accentPurple.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -189,7 +189,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 widget.existingTimestamp == null
                     ? Icons.add_circle_outline
                     : Icons.edit_outlined,
-                color: AppDesignSystem.accentBlue,
+                color: AppDesignSystem.accentPurple,
                 size: 20,
               ),
               const SizedBox(width: AppDesignSystem.spacingSm),
@@ -321,7 +321,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
               ElevatedButton(
                 onPressed: _isValid ? _handleSave : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppDesignSystem.accentBlue,
+                  backgroundColor: AppDesignSystem.accentPurple,
                   foregroundColor: AppDesignSystem.backgroundDark,
                   disabledBackgroundColor: AppDesignSystem.textDisabled,
                   shape: RoundedRectangleBorder(
@@ -447,7 +447,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
               icon: const Icon(Icons.access_time, size: 14),
               label: const Text('Now'),
               style: TextButton.styleFrom(
-                foregroundColor: AppDesignSystem.accentBlue,
+                foregroundColor: AppDesignSystem.accentPurple,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDesignSystem.spacingSm,
                   vertical: AppDesignSystem.spacingXs,

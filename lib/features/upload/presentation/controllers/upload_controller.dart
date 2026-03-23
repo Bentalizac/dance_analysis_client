@@ -29,7 +29,7 @@ import 'upload_state.dart';
 /// - Switch to another app and iOS kills the process
 /// - Navigate away accidentally
 /// Implementation would use shared_preferences to serialize state (video path,
-/// email, timestamps, trim times) and restore on app launch. Need to handle:
+/// timestamps, trim times) and restore on app launch. Need to handle:
 /// - Video file moved/deleted (graceful failure)
 /// - App updates/schema changes
 /// - Storage quota limits
@@ -55,24 +55,6 @@ class UploadController extends ChangeNotifier {
 
   /// Generate a unique ID for new entities
   String _generateId() => DateTime.now().millisecondsSinceEpoch.toString();
-
-  /// Basic email validation – intentionally simple for the MVP.
-  bool _isValidEmail(String email) {
-    final trimmed = email.trim();
-    if (trimmed.isEmpty) return false;
-    final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
-    return regex.hasMatch(trimmed);
-  }
-
-  void updateEmail(String email) {
-    final valid = _isValidEmail(email);
-    _state = _state.copyWith(
-      email: email,
-      isEmailValid: valid,
-      clearError: true,
-    );
-    notifyListeners();
-  }
 
   void updateDanceStyle(DanceStyle? style) {
     _state = _state.copyWith(

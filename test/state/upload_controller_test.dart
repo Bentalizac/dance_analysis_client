@@ -41,11 +41,6 @@ void main() {
         expect(controller.state.status, UploadStatus.idle);
       });
 
-      test('has empty email', () {
-        expect(controller.state.email, isEmpty);
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
       test('has no video', () {
         expect(controller.state.hasVideo, isFalse);
         expect(controller.state.video, isNull);
@@ -57,67 +52,6 @@ void main() {
 
       test('cannot upload initially', () {
         expect(controller.state.canUpload, isFalse);
-      });
-    });
-
-    group('updateEmail', () {
-      test('updates email and validates correctly', () {
-        controller.updateEmail('test@example.com');
-
-        expect(controller.state.email, 'test@example.com');
-        expect(controller.state.isEmailValid, isTrue);
-      });
-
-      test('marks invalid email as invalid', () {
-        controller.updateEmail('not-an-email');
-
-        expect(controller.state.email, 'not-an-email');
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
-      test('marks empty email as invalid', () {
-        controller.updateEmail('');
-
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
-      test('rejects email without @ symbol', () {
-        controller.updateEmail('userexample.com');
-
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
-      test('rejects email without domain', () {
-        controller.updateEmail('user@');
-
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
-      test('rejects email without TLD', () {
-        controller.updateEmail('user@domain');
-
-        expect(controller.state.isEmailValid, isFalse);
-      });
-
-      test('accepts email with subdomain', () {
-        controller.updateEmail('user@mail.example.com');
-
-        expect(controller.state.isEmailValid, isTrue);
-      });
-
-      test('trims whitespace from email', () {
-        controller.updateEmail('  test@example.com  ');
-
-        expect(controller.state.isEmailValid, isTrue);
-      });
-
-      test('clears error when updating email', () {
-        // First set an error
-        controller.updateEmail('invalid');
-        // Would need to trigger an error state first, but this tests the clearError flag
-        controller.updateEmail('valid@example.com');
-
-        expect(controller.state.errorMessage, isNull);
       });
     });
 
@@ -485,15 +419,15 @@ void main() {
     });
 
     group('upload', () {
-      setUp(() {
-        // Setup valid state for upload
-        controller.updateEmail('test@example.com');
-      });
-
       test('does not upload when canUpload is false', () async {
         await controller.upload();
 
-        verifyNever(mockApiService.uploadAndSubmitVideo(any));
+        verifyNever(
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
+        );
       });
 
       test('sets uploading status during upload', () async {
@@ -510,8 +444,14 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiService.uploadAndSubmitVideo(any),
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
         ).thenAnswer((_) async => 'job-id');
+        when(
+          mockHistoryRepository.recordSubmission(any),
+        ).thenAnswer((_) async {});
 
         final future = controller.upload();
 
@@ -541,12 +481,23 @@ void main() {
         );
 
         when(
-          mockApiService.uploadAndSubmitVideo(any),
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
         ).thenAnswer((_) async => 'job-id');
+        when(
+          mockHistoryRepository.recordSubmission(any),
+        ).thenAnswer((_) async {});
 
         await controller.upload();
 
-        verify(mockApiService.uploadAndSubmitVideo(mockVideo)).called(1);
+        verify(
+          mockApiService.uploadAndSubmitVideo(
+            mockVideo,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
+        ).called(1);
       });
 
       test('sets success status on successful upload', () async {
@@ -563,8 +514,14 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiService.uploadAndSubmitVideo(any),
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
         ).thenAnswer((_) async => 'job-id-123');
+        when(
+          mockHistoryRepository.recordSubmission(any),
+        ).thenAnswer((_) async {});
 
         await controller.upload();
 
@@ -585,8 +542,14 @@ void main() {
         controller.updateDanceStyle(DanceStyle.samba);
 
         when(
-          mockApiService.uploadAndSubmitVideo(any),
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
         ).thenAnswer((_) async => 'job-id-456');
+        when(
+          mockHistoryRepository.recordSubmission(any),
+        ).thenAnswer((_) async {});
 
         await controller.upload();
 
@@ -611,7 +574,10 @@ void main() {
         controller.updateDanceStyle(DanceStyle.waltz);
 
         when(
-          mockApiService.uploadAndSubmitVideo(any),
+          mockApiService.uploadAndSubmitVideo(
+            any,
+            onSendProgress: anyNamed('onSendProgress'),
+          ),
         ).thenThrow(const ApiServiceException('Upload failed'));
 
         await controller.upload();

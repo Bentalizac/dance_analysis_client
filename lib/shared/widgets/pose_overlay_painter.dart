@@ -65,7 +65,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final paint = Paint()
-      ..color = AppDesignSystem.accentBlue.withValues(alpha: 0.6)
+      ..color = AppDesignSystem.accentPurple.withValues(alpha: 0.6)
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
@@ -96,7 +96,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final paint = Paint()
-      ..color = AppDesignSystem.accentBlue
+      ..color = AppDesignSystem.accentPurple
       ..style = PaintingStyle.fill;
 
     for (var i = 0; i < keypoints.length; i++) {

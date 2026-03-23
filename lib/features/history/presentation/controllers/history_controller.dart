@@ -51,6 +51,29 @@ class HistoryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Soft-delete a job by hiding it from the list.
+  ///
+  /// Optimistically removes the item from the UI, then calls the
+  /// (currently stubbed) repository method.
+  Future<void> hideJob(String jobId) async {
+    // Optimistic removal from the list
+    final updatedItems =
+        _state.items.where((item) => item.job.jobId != jobId).toList();
+    _state = _state.copyWith(items: updatedItems);
+    notifyListeners();
+
+    try {
+      await _repository.hideJob(jobId);
+    } catch (e) {
+      // On failure, reload to restore the item
+      _state = _state.copyWith(
+        warningMessage: 'Could not delete job. Please try again.',
+      );
+      notifyListeners();
+      await loadHistory();
+    }
+  }
+
   /// Pull-to-refresh: retains existing items while refreshing.
   Future<void> refresh() async {
     _state = _state.copyWith(isRefreshing: true, clearWarningMessage: true);

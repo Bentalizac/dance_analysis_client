@@ -38,7 +38,7 @@ class NavigationCard extends StatelessWidget {
                 color: AppDesignSystem.backgroundDark,
                 borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
               ),
-              child: Icon(icon, color: AppDesignSystem.accentBlue, size: 32),
+              child: Icon(icon, color: AppDesignSystem.accentPurple, size: 32),
             ),
             const SizedBox(width: AppDesignSystem.spacingMd),
             Expanded(

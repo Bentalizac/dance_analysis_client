@@ -284,7 +284,7 @@ void main() {
 
         // Bookmark icon color
         final bookmarkIcon = tester.widget<Icon>(find.byIcon(Icons.bookmark));
-        expect(bookmarkIcon.color, AppDesignSystem.accentBlue);
+        expect(bookmarkIcon.color, AppDesignSystem.accentPurple);
 
         // Timestamp text color
         final timestampText = tester.widget<Text>(find.text('0:10 - 0:15'));

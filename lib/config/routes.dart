@@ -115,10 +115,8 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/history',
           name: 'history',
-          pageBuilder: (context, state) => NoTransitionPage(
-            key: state.pageKey,
-            child: const HistoryPage(),
-          ),
+          pageBuilder: (context, state) =>
+              NoTransitionPage(key: state.pageKey, child: const HistoryPage()),
         ),
         GoRoute(
           path: '/profile',
@@ -174,7 +172,7 @@ class _MainScaffold extends StatelessWidget {
           onTap: (index) => _onTabTapped(context, index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppDesignSystem.backgroundMedium,
-          selectedItemColor: AppDesignSystem.accentBlue,
+          selectedItemColor: AppDesignSystem.accentPurple,
           unselectedItemColor: AppDesignSystem.textSecondary,
           selectedFontSize: 12,
           unselectedFontSize: 12,

@@ -14,7 +14,8 @@ class AppDesignSystem {
   static const Color backgroundLight = Colors.white;
 
   /// Accent and interactive colors
-  static const Color accentBlue = Color(0xFFA5D0F7);
+  static const Color accentPurple = Color(0xFFc370df);
+  static const Color accentHoverPurple = Color(0xffe38fff);
   static const Color errorRed = Color(0xFFDE3737);
 
   /// Text colors
@@ -94,8 +95,8 @@ class AppDesignSystem {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: backgroundDark,
       colorScheme: ColorScheme.dark(
-        primary: accentBlue,
-        secondary: accentBlue,
+        primary: accentPurple,
+        secondary: accentPurple,
         error: errorRed,
         surface: backgroundMedium,
       ),

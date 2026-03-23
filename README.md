@@ -2,68 +2,378 @@
 
 A Flutter application for AI-powered dance coaching and analysis.
 
+The client lets dancers:
+
+- Upload practice videos for AI analysis
+- Track analysis jobs over time
+- View feedback and pose overlays
+- Manage access via email/password authentication
+
+---
+
 ## Overview
 
-This app allows dancers to upload practice videos, receive AI-generated feedback, and review their performance with detailed pose analysis overlays.
+This app talks to a backend API that:
 
-## Features
+- Authenticates users
+- Accepts video uploads (with timestamps and metadata)
+- Queues and processes analysis jobs
+- Returns feedback and pose data for visualization
 
-### ✅ Implemented
+On the client side we now have:
 
-- **Home Page** - Main landing page with navigation
-- **Results Page** - View analysis results with:
-  - Expandable feedback list
-  - Color-coded timestamps (positive/negative)
-  - Video player with pose skeleton overlay
-  - Red circle highlights for problem areas
-- **Demo Mode** - Sample results page with demo data
-- **Design System** - Consistent dark theme with custom colors and typography
-- **Video Overlay System** - Pose skeleton visualization using backend coordinates
+- A routed, bottom-nav driven app shell
+- A production-ready upload flow
+- A first implementation of history backed by local storage + backend jobs
+- Email/password authentication wired to the backend
+- Shared services (API, auth, video) and reusable widgets
 
-### 🚧 Stub Pages (Coming Soon)
+---
 
-- Upload - Upload practice videos for analysis
-- Review - Review pending analysis results
-- History - View past uploads and track progress
-- Profile - Manage account settings
+## Core Features
 
-## Project Structure
+### ✅ Home & Navigation
 
+- **Home Page**
+  - Main landing screen with navigation cards (e.g. Upload, History, Demo)
+  - Dark-themed layout using the shared design system
+- **Bottom Navigation Shell**
+  - Tabs for:
+    - Home
+    - Upload
+    - History
+    - (Profile stubbed for now)
+  - Integrated with `go_router` and route guards
+  - Upload tab includes a navigation guard so you don’t accidentally lose in-progress work
+
+### ✅ Authentication (Email + Password)
+
+- **Login / Register Page**
+  - Email + password login
+  - Registration with username
+  - Shared UI for login vs register modes
+  - Optional redirect back to the originally requested route (e.g. `/upload`, `/history`)
+
+- **Auth Service**
+  - Backed by generated API client and Dio
+  - Handles:
+    - `POST /api/v1/auth/login`
+    - `POST /api/v1/auth/register`
+    - `GET /api/v1/auth/me`
+  - Stores JWT access token in memory
+  - Configures Dio with the `Authorization` header
+  - Exposes:
+    - `currentUser`
+    - `isAuthenticated`
+    - Loading state and error mapping to user-friendly messages
+
+- **Route Guards**
+  - `/upload`, `/history`, `/profile` are **protected routes**
+  - If user is not authenticated:
+    - They are redirected to `/login?from=/desired/path`
+  - After successful login:
+    - User is sent back to the original route when possible
+
+### ✅ Upload Flow
+
+A full-featured upload flow powered by:
+
+- `UploadController` (business logic)
+- `UploadState` (immutable state snapshot)
+- `VideoPlayerManager` (video playback state)
+- `UploadPage` + `UploadPageContent` (UI with providers)
+
+**Main capabilities:**
+
+- **Video selection**
+  - Web: file picker
+  - Mobile: record from camera or choose from gallery
+  - Unified interface via shared `VideoService` abstraction
+
+- **Video playback**
+  - Uses `VideoPlayerWithPoseOverlay` when needed
+  - Standard controls (play/pause, scrub, time display)
+  - Resilient to platform differences (mobile vs web)
+
+- **Email capture**
+  - Email field required to submit
+  - Simple regex validation
+  - Clear inline error messaging
+
+- **Inline timestamping**
+  - Mark logical segments (steps / phrases) in a routine
+  - Uses:
+    - `VideoTimestamp` model
+    - `TimestampListItem` widget
+    - `InlineTimestampForm` widget
+  - Users can:
+    - Add new timestamps using the current video position
+    - Fine-tune time via slider while video stays interactive
+    - Edit or delete existing timestamps inline
+    - Tap timestamps to seek video
+
+- **Length validation & recommendations**
+  - Videos longer than a threshold (e.g. 15 seconds) without timestamps
+    trigger a **recommendation dialog**:
+    - Educates user on why timestamps help
+    - Lets user continue anyway or go back to add timestamps
+
+- **Upload request**
+  - Sends to backend via `ApiService` / `VideoRepository`:
+    - Video file
+    - Email
+    - Timestamps
+    - Basic metadata (duration, etc.)
+  - Receives a backend job identifier / storage reference
+  - On success:
+    - Creates a local **submission record** used by History
+
+- **Unsaved-work navigation guard**
+  - When upload page has in-progress state:
+    - Bottom nav attempts to leave `/upload` invoke a callback
+    - User can confirm discarding work or cancel navigation
+  - Guard is registered/unregistered from `UploadPageContent`
+
+> Note: Video trimming and advanced metadata persistence are partially planned and scaffolded but not fully implemented yet.
+
+### ✅ Results & Demo
+
+- **Results Page**
+  - Displays:
+    - Video (if available)
+    - Pose skeleton overlay
+    - Timestamped feedback list
+  - Accepts:
+    - `feedbackItems`
+    - `videoPath` (optional)
+    - `poseDataList`
+    - Optional callbacks for timestamp taps
+  - Uses `VideoPlayerWithPoseOverlay` and `PoseOverlayPainter` for visualization
+
+- **Demo Results Page**
+  - Standalone screen with demo data
+  - Handy for testing UI and design without needing real backend runs
+
+### ✅ History (Partially Implemented but Functional)
+
+History is now a feature, not just a stub. It combines:
+
+- Local submissions saved during upload
+- Remote job statuses from the backend `/jobs` (API details abstracted)
+
+**Components:**
+
+- `HistoryItem` model tying together:
+  - Local submission (video metadata, paths, dance style, createdAt)
+  - Remote job summary (status, timestamps, completion, etc.)
+- `HistoryLocalDataSource`:
+  - Stores submissions locally (e.g. via shared preferences + JSON)
+- `HistoryRepository`:
+  - Loads local submissions
+  - Fetches remote jobs for current user
+  - Merges them into a list of `HistoryItem`s
+- `HistoryController` + `HistoryState`:
+  - Drives the UI
+  - Handles loading, errors, pull-to-refresh, etc.
+- `HistoryPage`:
+  - Lists submissions with:
+    - Status (queued / processing / completed / failed)
+    - Basic metadata (date, duration, dance style if available)
+    - Indicator for whether the local video still exists
+  - Tapping an item navigates to `HistoryDetailPage`
+- `HistoryDetailPage`:
+  - Shows details for a single history entry
+  - Uses results-style layout to show:
+    - Video playback when local file exists
+    - Feedback items (stub / future: real backend feedback)
+
+**Current state:**
+
+- Local + remote data wiring is in place
+- Job statuses are surfaced in the UI
+- Navigation to a detail view is implemented
+- Real feedback parsing may still be evolving with backend
+
+### 🚧 Profile & Advanced Account Features (Planned / Stubbed)
+
+- Profile tab and page are present in routing but mostly stubbed
+- Future work will include:
+  - Viewing/updating basic user info
+  - Managing auth/session state more deeply
+  - Possibly linking OAuth-style flows
+
+---
+
+## Routing & App Shell
+
+Routing is implemented with `go_router` and a central routes configuration.
+
+- **Main routes:**
+  - `/` → `HomePage`
+  - `/upload` → `UploadPage`
+  - `/history` → `HistoryPage`
+  - `/login` → `LoginPage`
+  - `/demo` → `DemoResultsPage`
+  - `/profile` → (stub page)
+
+- **Navigation structure:**
+
+```text
+MainScaffold (bottom nav)
+├── Home       → HomePage
+├── Upload     → UploadPage (protected, upload guard)
+├── History    → HistoryPage (protected)
+└── Profile    → StubPage (protected)
 ```
+
+- **Route Guards:**
+  - Upload, History, Profile require authentication
+  - A global redirect checks auth state:
+    - If user is not logged in and hits a protected route → redirect to `/login?from=...`
+  - `LoginPage` respects `from` and navigates back after successful auth
+
+- **Upload Navigation Guard:**
+  - Central registration function:
+    - Upload page registers a callback when mounted
+    - Bottom nav checks with this callback before leaving `/upload`
+    - Avoids losing in-progress work
+
+---
+
+## Shared Services & Utilities
+
+The codebase uses a clear separation between **features** and **shared** modules.
+
+### Shared Services
+
+- `ApiService`
+  - Wraps generated OpenAPI client
+  - Configures Dio instance
+  - Manages auth token header
+  - Provides a single gateway for backend calls
+
+- `AuthService`
+  - See “Authentication” section
+  - Owns auth state and token
+
+- `VideoService` / `VideoServiceIo` / `VideoServiceWeb`
+  - Abstracts file picking and video path handling across platforms
+  - Helps the upload and results flows remain platform-agnostic
+
+### Shared Models
+
+- `FeedbackItem`
+- `PoseData`
+- `VideoTimestamp`
+- `VideoMetadata`
+- `HistoryItem`
+- `Submission`
+- `DanceStyle` (if present; used to categorize uploads)
+
+These models support JSON serialization where needed and are used across features.
+
+### Shared Widgets
+
+- `VideoPlayerWithOverlay`
+- `PoseOverlayPainter`
+- `VideoPlaceholder`
+- `TimestampListItem`
+- `TimestampManager`
+- `InlineTimestampForm`
+- `DiscardConfirmationDialog`
+- Common buttons, list items, etc. used across upload, results, and history
+
+### Design System
+
+Centralized theming and layout:
+
+- `AppDesignSystem` (`lib/shared/design_system/theme.dart`)
+  - Colors:
+    - Background dark: `#0F0F0F`
+    - Background medium: `#232323`
+    - Accent purple: `#C370DF`
+    - Error red: `#DE3737`
+    - Text primary/secondary
+  - Typography:
+    - Consistent text styles for headers, body, timestamps, labels
+  - Spacing constants
+- All feature UIs are built on this shared design system
+
+---
+
+## Project Structure (High-Level)
+
+```text
 lib/
-├── main.dart                    # App entry point
+├── main.dart                     # App entry point, router and providers bootstrap
+├── config/
+│   └── routes.dart               # go_router config, guards, bottom nav shell
+├── features/
+│   ├── auth/
+│   │   └── presentation/pages/login_page.dart
+│   ├── home/
+│   │   └── presentation/...
+│   ├── upload/
+│   │   ├── data/...
+│   │   ├── domain/...
+│   │   └── presentation/...
+│   ├── history/
+│   │   ├── data/history_local_data_source.dart
+│   │   ├── data/history_repository.dart
+│   │   └── presentation/...
+│   └── results/
+│       └── presentation/...
 ├── models/
-│   ├── feedback_item.dart       # Feedback data model
-│   └── pose_data.dart           # Pose skeleton data model
-├── services/
-│   ├── api_client.dart          # Backend API communication
-│   └── video_service.dart       # Video handling
-├── state/
-│   ├── upload_controller.dart   # Upload flow logic
-│   └── upload_state.dart        # Upload state management
-└── ui/
-    ├── design_system.dart       # Design tokens (colors, typography, spacing)
-    ├── home_page.dart           # Main landing page
-    ├── demo_results_page.dart   # Demo results with sample data
-    ├── results_page.dart        # Analysis results display
-    ├── upload_page.dart         # Video upload page
-    └── widgets/
-        ├── feedback_list_item.dart         # Expandable feedback item
-        ├── video_placeholder.dart          # Placeholder for missing videos
-        ├── video_player_with_overlay.dart  # Video player component
-        └── pose_overlay_painter.dart       # CustomPainter for pose skeleton
+│   ├── feedback_item.dart
+│   ├── pose_data.dart
+│   ├── history_item.dart
+│   ├── video_metadata.dart
+│   ├── video_timestamp.dart
+│   ├── submission.dart
+│   └── dance_style.dart (if present)
+├── shared/
+│   ├── design_system/theme.dart
+│   ├── services/
+│   │   ├── api_service.dart
+│   │   ├── auth_service.dart
+│   │   ├── video_service.dart
+│   │   ├── video_service_io.dart
+│   │   └── video_service_web.dart
+│   ├── utils/
+│   │   ├── format_helpers.dart
+│   │   └── job_status_extensions.dart
+│   └── widgets/
+│       ├── video_player_with_overlay.dart
+│       ├── pose_overlay_painter.dart
+│       ├── video_placeholder.dart
+│       ├── timestamp_list_item.dart
+│       ├── timestamp_manager.dart
+│       ├── inline_timestamp_form.dart
+│       └── discard_confirmation_dialog.dart
+└── generated/
+    └── api/...                    # OpenAPI-generated client (paths may vary)
 ```
 
-## Navigation Structure
+(Exact paths may vary slightly, but this reflects the current modular design.)
 
-```
-HomePage
-├── Upload → UploadPage (stub)
-├── Review → ReviewPage (stub)
-├── History → HistoryPage (stub)
-├── Profile → ProfilePage (stub)
-└── Demo Results → DemoResultsPage (working demo)
-```
+---
+
+## Documentation
+
+Additional, more detailed docs live under `docs/`:
+
+- `docs/UPLOAD_PAGE.md`
+  - Deep-dive into the upload architecture, timestamps, validation, and UX
+- `docs/VIDEO_PLAYER_SUMMARY.md`
+  - Implementation details of the video player
+- `docs/VIDEO_OVERLAY_GUIDE.md`
+  - Technical guide for pose overlay rendering
+- `docs/history_page_plan.md`
+  - Design document for the History feature and how it integrates with uploads and backend jobs
+- `docs/CODE_QUALITY_ASSESSMENT.md`
+  - Notes on code quality, structure, and improvement areas
+
+---
 
 ## Getting Started
 
@@ -71,143 +381,69 @@ HomePage
 
 - Flutter SDK (3.10.7+)
 - Dart SDK
-- iOS/Android development tools (for mobile)
+- iOS/Android tooling (Xcode, Android Studio, or CLI equivalents)
+- A running backend with:
+  - Auth endpoints
+  - Upload/job endpoints
+  - CORS and auth configured for this client
 
-### Installation
+### Install & Run
 
-1. Clone the repository
-2. Install dependencies:
+From the project root:
 
-   ```bash
-   flutter pub get
-   ```
-
-3. Run the app:
-   ```bash
-   flutter run
-   ```
-
-## Architecture
-
-### Data Flow
-
-```
-User uploads video → Server processes → Returns JSON
-         ↓
-Local video saved (no re-download!)
-         ↓
-Client receives:
-  - Feedback items (timestamps + text)
-  - Pose data (X,Y coordinates per frame)
-         ↓
-Client displays:
-  - Local video with playback
-  - Pose skeleton overlay (synchronized)
-  - Expandable feedback list
+```bash
+flutter pub get
+flutter run
 ```
 
-### Backend Integration
+For web:
 
-The app expects JSON responses in this format:
-
-```json
-{
-  "feedback_items": [
-    {
-      "timestamp": "0:14",
-      "type": "negative",
-      "feedback": "left foot should be rotated outward..."
-    }
-  ],
-  "pose_data": [
-    {
-      "timestamp": 0.14,
-      "keypoints": [
-        { "name": "left_ankle", "x": 0.45, "y": 0.95, "confidence": 0.95 }
-      ],
-      "highlighted_keypoints": [5, 6]
-    }
-  ]
-}
+```bash
+flutter run -d chrome
 ```
 
-## Design System
+Make sure API base URLs and any environment-specific configuration are set correctly (e.g. via flavors, compile-time env, or config files).
 
-### Colors
+---
 
-- **Background Dark**: `#0F0F0F` - Main background
-- **Background Medium**: `#232323` - Cards and surfaces
-- **Accent Blue**: `#A5D0F7` - Buttons and highlights
-- **Error Red**: `#DE3737` - Negative feedback
-- **Text Primary**: `#FFFFFF` - Primary text
-- **Text Secondary**: `#CCCCCC` - Secondary text
+## Current Status & Next Steps
 
-### Typography
+### Implemented
 
-All text uses consistent styles defined in `AppDesignSystem`:
+- Auth: login/register + guarded routes
+- Upload:
+  - Video selection
+  - Email and validation
+  - Inline timestamps
+  - Length-based recommendations
+  - Upload to backend with metadata
+  - Local submission recording for history
+- Results:
+  - Video + pose overlay
+  - Feedback list
+  - Demo page
+- History:
+  - Local submissions + remote job fetch
+  - List and detail pages
+  - Status integration
 
-- Timestamps: 16pt, medium weight
-- Feedback: 14pt, medium weight
-- Tabs: 14pt, semi-bold
+### In Progress / Planned
 
-## Video Player & Pose Overlay
+- Rich feedback integration from real backend payloads
+- Full video trimming pipeline
+- More robust persistence for video metadata and downloads
+- Profile page (user settings, logout entry point, etc.)
+- Better offline behavior for history and submissions
+- Cloud storage / CDN integration for serving videos (if backend evolves that way)
 
-The app includes a complete video player with pose skeleton overlay system. See `VIDEO_PLAYER_SUMMARY.md` and `lib/ui/VIDEO_OVERLAY_GUIDE.md` for detailed documentation.
-
-### Key Features
-
-- Plays local video files (bandwidth savings)
-- Synchronized pose skeleton overlay
-- Highlights problem areas with red circles
-- Auto-scales to video dimensions
-- Supports normalized (0-1) or pixel coordinates
-
-## Development
-
-### Running the Demo
-
-The app launches to the HomePage by default. Click "Demo Results" to see:
-
-- Video placeholder (no actual video)
-- Sample feedback items
-- Expandable feedback details
-- Color-coded timestamps
-
-### Adding New Pages
-
-1. Create page in `lib/ui/`
-2. Update HomePage navigation in `home_page.dart`
-3. Replace stub navigation with real page
-
-### Code Quality
-
-- ✅ Zero errors, zero warnings
-- ✅ Follows Flutter best practices
-- ✅ Comprehensive documentation
-- ✅ Reusable components
-- ✅ Type-safe models
-
-## Documentation
-
-- **README.md** (this file) - Project overview
-- **VIDEO_PLAYER_SUMMARY.md** - Video player implementation summary
-- **lib/ui/VIDEO_OVERLAY_GUIDE.md** - Complete technical guide for video overlay
-- **WARP.md** - Warp-specific documentation
-
-## Next Steps
-
-1. Implement Upload page (connect to UploadPage)
-2. Add API endpoint for analysis results
-3. Implement Review page (list of pending analyses)
-4. Implement History page (past uploads)
-5. Implement Profile page (user settings)
-6. Add authentication
-7. Add cloud storage integration
+---
 
 ## License
 
-[Add your license here]
+[Add your license information here]
 
-## Support
+---
 
-[Add support contact information]
+## Support / Contact
+
+[Add support contact information or contribution guidelines here]

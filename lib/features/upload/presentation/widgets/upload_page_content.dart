@@ -26,8 +26,6 @@ class UploadPageContent extends StatefulWidget {
 }
 
 class _UploadPageContentState extends State<UploadPageContent> {
-  late final TextEditingController _emailController;
-
   bool _isCheckingAuthForPicker = false;
 
   Future<bool> _ensureAuthenticatedForUpload() async {
@@ -62,18 +60,10 @@ class _UploadPageContentState extends State<UploadPageContent> {
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController();
 
     // Use addPostFrameCallback to safely access providers after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
-      // Listen for email changes
-      _emailController.addListener(() {
-        if (mounted) {
-          context.read<UploadController>().updateEmail(_emailController.text);
-        }
-      });
 
       // Listen for video selection to initialize player
       context.read<UploadController>().addListener(_onUploadStateChanged);
@@ -85,7 +75,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
 
   @override
   void dispose() {
-    _emailController.dispose();
     // Safely remove listener
     try {
       context.read<UploadController>().removeListener(_onUploadStateChanged);
@@ -170,11 +159,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
                       const SizedBox(height: AppDesignSystem.spacingLg),
                     ],
 
-                    // Email input
-                    _buildEmailInput(state),
-
-                    const SizedBox(height: AppDesignSystem.spacingLg),
-
                     // Dance style dropdown
                     _buildDanceStyleDropdown(controller, state),
 
@@ -211,7 +195,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
           Icon(
             Icons.video_library_outlined,
             size: 64,
-            color: AppDesignSystem.accentBlue,
+            color: AppDesignSystem.accentPurple,
           ),
           const SizedBox(height: AppDesignSystem.spacingMd),
           Text(
@@ -315,8 +299,8 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     playerManager.controller!,
                     allowScrubbing: true,
                     colors: VideoProgressColors(
-                      playedColor: AppDesignSystem.accentBlue,
-                      bufferedColor: AppDesignSystem.accentBlue.withValues(
+                      playedColor: AppDesignSystem.accentPurple,
+                      bufferedColor: AppDesignSystem.accentPurple.withValues(
                         alpha: 0.3,
                       ),
                       backgroundColor: AppDesignSystem.dividerLight,
@@ -350,7 +334,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 IconButton(
                   icon: Icon(
                     playerManager.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: AppDesignSystem.accentBlue,
+                    color: AppDesignSystem.accentPurple,
                   ),
                   onPressed: playerManager.togglePlayPause,
                 ),
@@ -371,37 +355,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  Widget _buildEmailInput(UploadState state) {
-    return TextField(
-      controller: _emailController,
-      keyboardType: TextInputType.emailAddress,
-      style: TextStyle(color: AppDesignSystem.textPrimary),
-      decoration: InputDecoration(
-        labelText: 'Email',
-        hintText: 'Enter your email address',
-        prefixIcon: Icon(Icons.email, color: AppDesignSystem.accentBlue),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.accentBlue),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.errorRed),
-        ),
-        errorText: state.email.isNotEmpty && !state.isEmailValid
-            ? 'Please enter a valid email'
-            : null,
-      ),
-    );
-  }
-
   Widget _buildDanceStyleDropdown(
     UploadController controller,
     UploadState state,
@@ -412,7 +365,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
       decoration: InputDecoration(
         labelText: 'Dance Style',
         hintText: 'Select the type of dance',
-        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.accentBlue),
+        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.accentPurple),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         ),
@@ -422,7 +375,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.accentBlue),
+          borderSide: const BorderSide(color: AppDesignSystem.accentPurple),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
@@ -461,8 +414,20 @@ class _UploadPageContentState extends State<UploadPageContent> {
           padding: const EdgeInsets.symmetric(
             vertical: AppDesignSystem.spacingMd,
           ),
-          backgroundColor: AppDesignSystem.accentBlue,
+          backgroundColor: AppDesignSystem.accentPurple,
+          foregroundColor: AppDesignSystem.textPrimary,
           disabledBackgroundColor: AppDesignSystem.backgroundMedium,
+          disabledForegroundColor: AppDesignSystem.textDisabled,
+        ).copyWith(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return AppDesignSystem.backgroundMedium;
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return AppDesignSystem.accentHoverPurple;
+            }
+            return AppDesignSystem.accentPurple;
+          }),
         ),
         child: const Text(
           'Upload Video',
@@ -488,7 +453,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
             FractionallySizedBox(
               widthFactor: progress,
               heightFactor: 1.0,
-              child: const ColoredBox(color: AppDesignSystem.accentBlue),
+              child: const ColoredBox(color: AppDesignSystem.accentPurple),
             ),
             // Label
             Center(
@@ -496,8 +461,8 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 state.status == UploadStatus.submittingJob
                     ? 'Submitting…'
                     : progress >= 1.0
-                        ? 'Processing…'
-                        : 'Uploading… ${(progress * 100).toInt()}%',
+                    ? 'Processing…'
+                    : 'Uploading… ${(progress * 100).toInt()}%',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

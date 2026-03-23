@@ -45,8 +45,6 @@ class SelectedVideo {
 class UploadState {
   const UploadState({
     required this.status,
-    required this.email,
-    required this.isEmailValid,
     required this.video,
     required this.errorMessage,
     required this.timestamps,
@@ -62,8 +60,6 @@ class UploadState {
 
   factory UploadState.initial() => const UploadState(
     status: UploadStatus.idle,
-    email: '',
-    isEmailValid: false,
     video: null,
     errorMessage: null,
     timestamps: [],
@@ -78,8 +74,6 @@ class UploadState {
   );
 
   final UploadStatus status;
-  final String email;
-  final bool isEmailValid;
   final SelectedVideo? video;
   final String? errorMessage;
   final double? uploadProgress;
@@ -111,8 +105,7 @@ class UploadState {
   bool get hasVideo => video != null;
 
   /// Whether the user can attempt an upload.
-  bool get canUpload =>
-      hasVideo && isEmailValid && danceStyle != null && !_isBusy;
+  bool get canUpload => hasVideo && danceStyle != null && !_isBusy;
 
   /// Internal convenience for disabling UI while work is in progress.
   bool get _isBusy => switch (status) {
@@ -157,8 +150,6 @@ class UploadState {
 
   UploadState copyWith({
     UploadStatus? status,
-    String? email,
-    bool? isEmailValid,
     SelectedVideo? video,
     bool clearVideo = false,
     String? errorMessage,
@@ -181,8 +172,6 @@ class UploadState {
   }) {
     return UploadState(
       status: status ?? this.status,
-      email: email ?? this.email,
-      isEmailValid: isEmailValid ?? this.isEmailValid,
       video: clearVideo ? null : (video ?? this.video),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       timestamps: timestamps ?? this.timestamps,

@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Icon(Icons.lock_outline, size: 64, color: AppDesignSystem.accentBlue),
+        Icon(Icons.lock_outline, size: 64, color: AppDesignSystem.accentPurple),
         const SizedBox(height: AppDesignSystem.spacingMd),
         Text(
           _isRegisterMode ? 'Create your account' : 'Welcome back',
@@ -237,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentBlue),
+          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
         ),
       ),
       validator: (value) {
@@ -289,7 +289,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentBlue),
+          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
         ),
       ),
       validator: (value) {
@@ -325,7 +325,7 @@ class _LoginPageState extends State<LoginPage> {
           child: ElevatedButton(
             onPressed: _isSubmitting ? null : _onSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.accentBlue,
+              backgroundColor: AppDesignSystem.accentPurple,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 vertical: AppDesignSystem.spacingSm,
@@ -376,7 +376,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentBlue),
+          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
         ),
       ),
       validator: (value) {
@@ -422,7 +422,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Text(
             actionText,
             style: AppDesignSystem.smallTextStyle.copyWith(
-              color: AppDesignSystem.accentBlue,
+              color: AppDesignSystem.accentPurple,
               fontWeight: FontWeight.w600,
             ),
           ),

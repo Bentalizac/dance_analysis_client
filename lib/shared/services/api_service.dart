@@ -1,10 +1,13 @@
 import 'dart:io';
 
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
 
 import '../../generated/api/export.dart';
 import '../../features/upload/presentation/controllers/upload_state.dart';
+import 'token_refresh_interceptor.dart';
 
 /// Service for all API communication using the generated REST client.
 ///
@@ -24,6 +27,11 @@ class ApiService {
   final String _baseUrl;
   late final RestClient _client;
   String? _authToken;
+
+  // In-memory cookie jar so the HTTP-only refresh token cookie set by the
+  // backend on /login is automatically sent with subsequent requests (e.g.
+  // /refresh). On web the browser manages cookies natively, so we skip this.
+  final CookieJar _cookieJar = CookieJar();
 
   /// Access to the generated REST client for direct API calls.
   RestClient get client => _client;
@@ -51,7 +59,18 @@ class ApiService {
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(minutes: 5), // Longer for uploads
+      // On web, instruct XMLHttpRequest to include credentials (cookies) for
+      // cross-origin requests so the browser sends the refresh token cookie.
+      extra: kIsWeb ? {'withCredentials': true} : {},
     );
+
+    // On native platforms, manage cookies explicitly so the HTTP-only refresh
+    // token cookie is persisted and attached to every request automatically.
+    // On web the browser already handles this — adding CookieManager there
+    // could interfere with browser-managed cookies.
+    if (!kIsWeb) {
+      _dio.interceptors.add(CookieManager(_cookieJar));
+    }
 
     // Auth interceptor: injects Bearer token into every request when available.
     // This is more reliable than setting headers on BaseOptions because it
@@ -106,6 +125,31 @@ class ApiService {
   /// Clear any configured auth token.
   void clearAuthToken() {
     _authToken = null;
+  }
+
+  /// Attach the [TokenRefreshInterceptor] to Dio.
+  ///
+  /// Called once by [AuthService] after it is constructed so the interceptor
+  /// can use [AuthService]'s own methods as callbacks without creating a
+  /// circular dependency at construction time.
+  ///
+  /// - [refreshAccessToken]: Calls the backend refresh endpoint and returns
+  ///   the new access token. Must also update the token in this service as a
+  ///   side effect.
+  /// - [onSessionExpired]: Called when the session cannot be recovered (e.g.
+  ///   the refresh token itself is expired or invalid). Should clear local
+  ///   auth state without making further authenticated network calls.
+  void attachTokenRefreshInterceptor({
+    required Future<String?> Function() refreshAccessToken,
+    required Future<void> Function() onSessionExpired,
+  }) {
+    _dio.interceptors.add(
+      TokenRefreshInterceptor(
+        dio: _dio,
+        refreshAccessToken: refreshAccessToken,
+        onSessionExpired: onSessionExpired,
+      ),
+    );
   }
 
   /// Upload a video using the presigned URL flow and submit for analysis.

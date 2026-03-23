@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../generated/api/models/job_status.dart';
+import '../../../../models/feedback_item.dart';
 import '../../../../models/history_item.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/utils/format_helpers.dart';
@@ -21,6 +22,7 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   late final HistoryController _controller;
+  bool _isFetchingFeedback = false;
 
   @override
   void initState() {
@@ -44,21 +46,29 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Scaffold(
         backgroundColor: AppDesignSystem.backgroundDark,
         appBar: AppBar(title: const Text('History'), centerTitle: true),
-        body: Consumer<HistoryController>(
-          builder: (context, controller, _) {
-            final state = controller.state;
+        body: Stack(
+          children: [
+            Consumer<HistoryController>(
+              builder: (context, controller, _) {
+                final state = controller.state;
 
-            return switch (state.status) {
-              HistoryStatus.initial ||
-              HistoryStatus.loading => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              HistoryStatus.error => _buildErrorState(state, controller),
-              HistoryStatus.loaded => state.items.isEmpty
-                  ? _buildEmptyState()
-                  : _buildHistoryList(state, controller),
-            };
-          },
+                return switch (state.status) {
+                  HistoryStatus.initial || HistoryStatus.loading =>
+                    const Center(child: CircularProgressIndicator()),
+                  HistoryStatus.error => _buildErrorState(state, controller),
+                  HistoryStatus.loaded =>
+                    state.items.isEmpty
+                        ? _buildEmptyState()
+                        : _buildHistoryList(state, controller),
+                };
+              },
+            ),
+            if (_isFetchingFeedback)
+              Container(
+                color: Colors.black54,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+          ],
         ),
       ),
     );
@@ -162,7 +172,7 @@ class _HistoryPageState extends State<HistoryPage> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: controller.refresh,
-            color: AppDesignSystem.accentBlue,
+            color: AppDesignSystem.accentPurple,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.spacingMd,
@@ -170,9 +180,11 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
               itemCount: state.items.length,
               itemBuilder: (context, index) {
+                final item = state.items[index];
                 return _HistoryListItem(
-                  item: state.items[index],
-                  onTap: () => _onItemTapped(context, state.items[index]),
+                  item: item,
+                  onTap: () => _onItemTapped(context, item),
+                  onDelete: () => _onDeleteTapped(context, item, controller),
                 );
               },
             ),
@@ -182,21 +194,72 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  void _onItemTapped(BuildContext context, HistoryItem item) {
+  void _onDeleteTapped(
+    BuildContext context,
+    HistoryItem item,
+    HistoryController controller,
+  ) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignSystem.backgroundMedium,
+        title: const Text('Delete job?'),
+        content: const Text('This will remove the job from your history.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppDesignSystem.errorRed,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        controller.hideJob(item.job.jobId);
+      }
+    });
+  }
+
+  Future<void> _onItemTapped(BuildContext context, HistoryItem item) async {
     if (item.hasFeedback) {
+      setState(() {
+        _isFetchingFeedback = true;
+      });
+
       final repository = context.read<HistoryRepository>();
+      List<FeedbackItem> feedbackItems = const [];
+
+      try {
+        // Fetch real feedback asynchronously from /videos/{job_id}/report.
+        feedbackItems = await repository.getJobFeedback(item.job.jobId);
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isFetchingFeedback = false;
+          });
+        }
+      }
+
+      if (!context.mounted) return;
+
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => HistoryDetailPage(
-            item: item,
-            feedbackItems: repository.getStubbedFeedback(item.job.jobId),
-          ),
+          builder: (_) =>
+              HistoryDetailPage(item: item, feedbackItems: feedbackItems),
         ),
       );
     } else if (item.isInProgress) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('This video is still being processed. Check back soon.'),
+          content: Text(
+            'This video is still being processed. Check back soon.',
+          ),
           duration: Duration(seconds: 2),
         ),
       );
@@ -215,10 +278,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
 /// A single row in the history list.
 class _HistoryListItem extends StatelessWidget {
-  const _HistoryListItem({required this.item, required this.onTap});
+  const _HistoryListItem({
+    required this.item,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final HistoryItem item;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -232,38 +300,51 @@ class _HistoryListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
           child: Padding(
             padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Video availability icon
-                _buildVideoIcon(),
-                const SizedBox(width: AppDesignSystem.spacingMd),
+                Row(
+                  children: [
+                    // Video availability icon
+                    _buildVideoIcon(),
+                    const SizedBox(width: AppDesignSystem.spacingMd),
 
-                // Title + date
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.displayTitle,
-                        style: TextStyle(
-                          color: AppDesignSystem.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    // Title + date
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.displayTitle,
+                            style: TextStyle(
+                              color: AppDesignSystem.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppDesignSystem.spacingXs),
+                          Text(
+                            formatHistoryDate(item.effectiveCreatedAt),
+                            style: AppDesignSystem.smallTextStyle.copyWith(
+                              color: AppDesignSystem.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppDesignSystem.spacingXs),
-                      Text(
-                        formatHistoryDate(item.effectiveCreatedAt),
-                        style: AppDesignSystem.smallTextStyle.copyWith(
-                          color: AppDesignSystem.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+
+                    // Status chip
+                    _buildStatusChip(),
+
+                    // Delete button
+                    const SizedBox(width: AppDesignSystem.spacingSm),
+                    _buildDeleteButton(),
+                  ],
                 ),
 
-                // Status chip
-                _buildStatusChip(),
+                // Progress bar for processing jobs
+                if (item.isInProgress && item.progress != null)
+                  _buildProgressBar(),
               ],
             ),
           ),
@@ -276,7 +357,7 @@ class _HistoryListItem extends StatelessWidget {
     return Icon(
       item.hasLocalVideo ? Icons.videocam : Icons.videocam_off_outlined,
       color: item.hasLocalVideo
-          ? AppDesignSystem.accentBlue
+          ? AppDesignSystem.accentPurple
           : AppDesignSystem.textSecondary.withValues(alpha: 0.5),
       size: 28,
     );
@@ -313,6 +394,55 @@ class _HistoryListItem extends StatelessWidget {
             style: AppDesignSystem.smallTextStyle.copyWith(
               color: status.chipTextColor,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton() {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        iconSize: 20,
+        icon: Icon(
+          Icons.delete_outline,
+          color: AppDesignSystem.textSecondary.withValues(alpha: 0.6),
+        ),
+        onPressed: onDelete,
+        tooltip: 'Delete',
+      ),
+    );
+  }
+
+  Widget _buildProgressBar() {
+    final pct = (item.progress! / 100).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppDesignSystem.spacingSm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+            child: LinearProgressIndicator(
+              value: pct,
+              minHeight: 4,
+              backgroundColor: AppDesignSystem.accentPurple.withValues(
+                alpha: 0.15,
+              ),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppDesignSystem.accentPurple,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDesignSystem.spacingXs),
+          Text(
+            '${item.progress!.round()}% complete',
+            style: AppDesignSystem.smallTextStyle.copyWith(
+              color: AppDesignSystem.textSecondary,
             ),
           ),
         ],

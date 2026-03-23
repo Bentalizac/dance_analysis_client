@@ -31,7 +31,7 @@ class HomePage extends StatelessWidget {
                     Icon(
                       Icons.school,
                       size: 64,
-                      color: AppDesignSystem.accentBlue,
+                      color: AppDesignSystem.accentPurple,
                     ),
                     const SizedBox(height: AppDesignSystem.spacingMd),
                     Text(
@@ -111,7 +111,7 @@ class HomePage extends StatelessWidget {
                 title: 'Demo Results',
                 subtitle: 'View sample analysis results',
                 onTap: () => context.push('/demo'),
-                color: AppDesignSystem.accentBlue.withValues(alpha: 0.2),
+                color: AppDesignSystem.accentPurple.withValues(alpha: 0.2),
               ),
             ],
           ),

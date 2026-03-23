@@ -12,7 +12,9 @@ import '../../shared/services/api_service.dart';
 /// - Hold the access token in memory and configure Dio auth header
 /// - Expose loading + error states for the UI
 class AuthService extends ChangeNotifier {
-  AuthService(this._apiService);
+  AuthService(this._apiService) {
+    _registerRefreshHandling();
+  }
 
   final ApiService _apiService;
 
@@ -31,6 +33,72 @@ class AuthService extends ChangeNotifier {
 
   /// Access token for authorized API calls (in-memory only for now).
   String? get accessToken => _accessToken;
+
+  // ---------------------------------------------------------------------------
+  // Refresh handling
+  // ---------------------------------------------------------------------------
+
+  /// Registers this service's refresh and session-expiry callbacks with
+  /// [ApiService] so [TokenRefreshInterceptor] can transparently renew tokens.
+  ///
+  /// Called once from the constructor. Uses `this` method references rather
+  /// than lambdas so the callbacks always dispatch to the live instance.
+  void _registerRefreshHandling() {
+    _apiService.attachTokenRefreshInterceptor(
+      refreshAccessToken: _refreshAccessToken,
+      onSessionExpired: _signOutLocally,
+    );
+  }
+
+  /// Called by [TokenRefreshInterceptor] when the current access token expires.
+  ///
+  /// Calls `POST /api/v1/auth/refresh`. The backend reads the HTTP-only
+  /// refresh token cookie and—if valid—returns a new access token and rotates
+  /// the refresh token cookie.
+  ///
+  /// Returns the new access token on success, or `null` if the refresh fails
+  /// (which causes the interceptor to call [_signOutLocally]).
+  Future<String?> _refreshAccessToken() async {
+    debugPrint('[AuthService] _refreshAccessToken: requesting new token…');
+    try {
+      final token =
+          await _apiService.client.auth.refreshTokenApiV1AuthRefreshPost();
+
+      if (token.accessToken.isEmpty) {
+        debugPrint(
+          '[AuthService] _refreshAccessToken: received empty token.',
+        );
+        return null;
+      }
+
+      _accessToken = token.accessToken;
+      _apiService.setAuthToken(token.accessToken);
+      debugPrint('[AuthService] _refreshAccessToken: token updated.');
+      // No notifyListeners here — the UI does not need to rebuild solely
+      // because an invisible background refresh occurred.
+      return token.accessToken;
+    } catch (e) {
+      debugPrint('[AuthService] _refreshAccessToken failed: $e');
+      return null;
+    }
+  }
+
+  /// Clears local auth state without making any network calls.
+  ///
+  /// Used by [TokenRefreshInterceptor] when the session cannot be recovered
+  /// (e.g. the refresh token itself is expired). Triggers a UI rebuild via
+  /// [notifyListeners] so router guards redirect to the login screen.
+  Future<void> _signOutLocally() async {
+    debugPrint('[AuthService] _signOutLocally: clearing local session.');
+    _currentUser = null;
+    _accessToken = null;
+    _apiService.clearAuthToken();
+    notifyListeners();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public auth actions
+  // ---------------------------------------------------------------------------
 
   /// Login using email + password via backend.
   ///
@@ -201,16 +269,29 @@ class AuthService extends ChangeNotifier {
 
   /// Logs out the current user.
   ///
-  /// Clears in-memory user and token and removes Authorization header.
+  /// Calls `POST /api/v1/auth/logout` on the backend to clear the HTTP-only
+  /// refresh token cookie, then clears all local auth state.
+  ///
+  /// The backend call is **best-effort**: a network error will not prevent
+  /// local sign-out from completing so the user is never stuck logged-in.
   Future<void> signOut() async {
     if (_isLoading) return;
 
     _setLoading(true);
     try {
-      _currentUser = null;
-      _accessToken = null;
-      _apiService.clearAuthToken();
-      notifyListeners();
+      // Tell the server to clear the refresh token cookie.
+      // Fire-and-forget: don't let a network error block sign-out.
+      try {
+        await _apiService.client.auth.logoutApiV1AuthLogoutPost();
+        debugPrint('[AuthService] signOut: backend logout succeeded.');
+      } on DioException catch (e) {
+        debugPrint(
+          '[AuthService] signOut: backend logout failed (${e.message}) '
+          '— proceeding with local sign-out.',
+        );
+      }
+
+      await _signOutLocally();
     } finally {
       _setLoading(false);
     }

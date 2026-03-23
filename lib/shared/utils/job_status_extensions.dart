@@ -7,28 +7,31 @@ import '../design_system/theme.dart';
 extension JobStatusDisplay on JobStatus {
   /// Human-readable label for this status.
   String get displayLabel => switch (this) {
-        JobStatus.pending => 'Queued',
-        JobStatus.processing => 'Processing…',
-        JobStatus.completed => 'Completed',
-        JobStatus.failed => 'Failed',
-        JobStatus.$unknown => 'Unknown',
-      };
+    JobStatus.pending => 'Queued',
+    JobStatus.processing => 'Processing…',
+    JobStatus.completed => 'Completed',
+    JobStatus.failed => 'Failed',
+    JobStatus.failedHidden => 'Hidden',
+    JobStatus.$unknown => 'Unknown',
+  };
 
   /// Background color for the status chip.
   Color get chipColor => switch (this) {
-        JobStatus.pending => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
-        JobStatus.processing => AppDesignSystem.accentBlue.withValues(alpha: 0.2),
-        JobStatus.completed => Colors.green.withValues(alpha: 0.2),
-        JobStatus.failed => AppDesignSystem.errorRed.withValues(alpha: 0.2),
-        JobStatus.$unknown => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
-      };
+    JobStatus.pending => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
+    JobStatus.processing => AppDesignSystem.accentPurple.withValues(alpha: 0.2),
+    JobStatus.completed => Colors.green.withValues(alpha: 0.2),
+    JobStatus.failed => AppDesignSystem.errorRed.withValues(alpha: 0.2),
+    JobStatus.failedHidden => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
+    JobStatus.$unknown => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
+  };
 
   /// Foreground / text color for the status chip.
   Color get chipTextColor => switch (this) {
-        JobStatus.pending => AppDesignSystem.textSecondary,
-        JobStatus.processing => AppDesignSystem.accentBlue,
-        JobStatus.completed => Colors.green,
-        JobStatus.failed => AppDesignSystem.errorRed,
-        JobStatus.$unknown => AppDesignSystem.textSecondary,
-      };
+    JobStatus.pending => AppDesignSystem.textSecondary,
+    JobStatus.processing => AppDesignSystem.accentPurple,
+    JobStatus.completed => Colors.green,
+    JobStatus.failed => AppDesignSystem.errorRed,
+    JobStatus.failedHidden => AppDesignSystem.textSecondary,
+    JobStatus.$unknown => AppDesignSystem.textSecondary,
+  };
 }

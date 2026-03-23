@@ -50,6 +50,12 @@ class HistoryItem {
   /// Whether this job failed.
   bool get isFailed => job.status == JobStatus.failed;
 
+  /// Whether this job has been soft-deleted (hidden).
+  bool get isHidden => job.status == JobStatus.failedHidden;
+
+  /// Processing progress (0–100), or null if not applicable.
+  double? get progress => job.progress?.toDouble();
+
   @override
   String toString() =>
       'HistoryItem(jobId: ${job.jobId}, status: $effectiveStatus, '
