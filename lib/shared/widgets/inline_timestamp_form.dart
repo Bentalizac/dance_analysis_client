@@ -171,10 +171,10 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
       ),
       padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundDark,
+        color: AppDesignSystem.backgroundMedium,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         border: Border.all(
-          color: AppDesignSystem.accentPurple.withValues(alpha: 0.3),
+          color: AppDesignSystem.mainAccent.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -189,7 +189,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 widget.existingTimestamp == null
                     ? Icons.add_circle_outline
                     : Icons.edit_outlined,
-                color: AppDesignSystem.accentPurple,
+                color: AppDesignSystem.mainAccent,
                 size: 20,
               ),
               const SizedBox(width: AppDesignSystem.spacingSm),
@@ -321,8 +321,8 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
               ElevatedButton(
                 onPressed: _isValid ? _handleSave : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppDesignSystem.accentPurple,
-                  foregroundColor: AppDesignSystem.backgroundDark,
+                  backgroundColor: AppDesignSystem.mainAccent,
+                  foregroundColor: AppDesignSystem.textOnDark,
                   disabledBackgroundColor: AppDesignSystem.textDisabled,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
@@ -447,7 +447,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
               icon: const Icon(Icons.access_time, size: 14),
               label: const Text('Now'),
               style: TextButton.styleFrom(
-                foregroundColor: AppDesignSystem.accentPurple,
+                foregroundColor: AppDesignSystem.mainAccent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDesignSystem.spacingSm,
                   vertical: AppDesignSystem.spacingXs,

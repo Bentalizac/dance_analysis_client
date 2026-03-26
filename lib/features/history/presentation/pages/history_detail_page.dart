@@ -22,7 +22,7 @@ class HistoryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
+      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(
         title: Text(item.displayTitle),
         centerTitle: true,

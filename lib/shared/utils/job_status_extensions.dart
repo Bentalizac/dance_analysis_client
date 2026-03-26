@@ -18,17 +18,19 @@ extension JobStatusDisplay on JobStatus {
   /// Background color for the status chip.
   Color get chipColor => switch (this) {
     JobStatus.pending => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
-    JobStatus.processing => AppDesignSystem.accentPurple.withValues(alpha: 0.2),
+    JobStatus.processing => AppDesignSystem.mainAccent.withValues(alpha: 0.2),
     JobStatus.completed => Colors.green.withValues(alpha: 0.2),
     JobStatus.failed => AppDesignSystem.errorRed.withValues(alpha: 0.2),
-    JobStatus.failedHidden => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
+    JobStatus.failedHidden => AppDesignSystem.textSecondary.withValues(
+      alpha: 0.2,
+    ),
     JobStatus.$unknown => AppDesignSystem.textSecondary.withValues(alpha: 0.2),
   };
 
   /// Foreground / text color for the status chip.
   Color get chipTextColor => switch (this) {
     JobStatus.pending => AppDesignSystem.textSecondary,
-    JobStatus.processing => AppDesignSystem.accentPurple,
+    JobStatus.processing => AppDesignSystem.mainAccent,
     JobStatus.completed => Colors.green,
     JobStatus.failed => AppDesignSystem.errorRed,
     JobStatus.failedHidden => AppDesignSystem.textSecondary,

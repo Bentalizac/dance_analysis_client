@@ -52,7 +52,7 @@ class TimestampListItem extends StatelessWidget {
                     child: Icon(
                       Icons.bookmark,
                       size: 16,
-                      color: AppDesignSystem.accentPurple,
+                      color: AppDesignSystem.mainAccent,
                     ),
                   ),
                   const SizedBox(width: 10),

@@ -93,8 +93,8 @@ class HistoryLocalDataSource {
   /// Get cached feedback data for a specific [jobId], or null if not cached.
   ///
   /// Returns a map with:
-  /// - "reportJson": Map<String, dynamic>
-  /// - "feedbackItems": List<FeedbackItem>
+  /// - "reportJson": Map of String to dynamic
+  /// - "feedbackItems": List of FeedbackItem
   Map<String, dynamic>? getFeedbackEntry(String jobId) {
     final all = loadAllFeedbackRaw();
     final entry = all[jobId];

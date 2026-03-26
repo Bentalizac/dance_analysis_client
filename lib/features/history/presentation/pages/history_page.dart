@@ -44,7 +44,7 @@ class _HistoryPageState extends State<HistoryPage> {
     return ChangeNotifierProvider.value(
       value: _controller,
       child: Scaffold(
-        backgroundColor: AppDesignSystem.backgroundDark,
+        backgroundColor: AppDesignSystem.backgroundLight,
         appBar: AppBar(title: const Text('History'), centerTitle: true),
         body: Stack(
           children: [
@@ -172,7 +172,7 @@ class _HistoryPageState extends State<HistoryPage> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: controller.refresh,
-            color: AppDesignSystem.accentPurple,
+            color: AppDesignSystem.mainAccent,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.spacingMd,
@@ -357,7 +357,7 @@ class _HistoryListItem extends StatelessWidget {
     return Icon(
       item.hasLocalVideo ? Icons.videocam : Icons.videocam_off_outlined,
       color: item.hasLocalVideo
-          ? AppDesignSystem.accentPurple
+          ? AppDesignSystem.mainAccent
           : AppDesignSystem.textSecondary.withValues(alpha: 0.5),
       size: 28,
     );
@@ -430,11 +430,11 @@ class _HistoryListItem extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 4,
-              backgroundColor: AppDesignSystem.accentPurple.withValues(
+              backgroundColor: AppDesignSystem.mainAccent.withValues(
                 alpha: 0.15,
               ),
               valueColor: const AlwaysStoppedAnimation<Color>(
-                AppDesignSystem.accentPurple,
+                AppDesignSystem.mainAccent,
               ),
             ),
           ),

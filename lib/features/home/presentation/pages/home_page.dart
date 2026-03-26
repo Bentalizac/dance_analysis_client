@@ -11,7 +11,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
+      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('Dance Coach'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -31,7 +31,7 @@ class HomePage extends StatelessWidget {
                     Icon(
                       Icons.school,
                       size: 64,
-                      color: AppDesignSystem.accentPurple,
+                      color: AppDesignSystem.mainAccent,
                     ),
                     const SizedBox(height: AppDesignSystem.spacingMd),
                     Text(
@@ -58,31 +58,18 @@ class HomePage extends StatelessWidget {
 
               // Navigation cards
               NavigationCard(
-                icon: Icons.upload_file,
-                title: 'Upload',
-                subtitle: 'Upload a practice video for analysis',
-                onTap: () => context.go('/upload'),
+                icon: Icons.library_music,
+                title: 'Routines',
+                subtitle: 'Create and manage your routines',
+                onTap: () => context.go('/routines'),
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),
 
               NavigationCard(
-                icon: Icons.rate_review,
-                title: 'Review',
-                subtitle: 'Review your analysis results',
-                onTap: () {
-                  // TODO: Implement review page
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon')));
-                },
-              ),
-              const SizedBox(height: AppDesignSystem.spacingMd),
-
-              NavigationCard(
-                icon: Icons.history,
-                title: 'History',
-                subtitle: 'View past uploads and progress',
-                onTap: () => context.go('/history'),
+                icon: Icons.group,
+                title: 'Groups',
+                subtitle: 'Collaborate with your dance partners',
+                onTap: () => context.go('/groups'),
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),
 
@@ -111,7 +98,7 @@ class HomePage extends StatelessWidget {
                 title: 'Demo Results',
                 subtitle: 'View sample analysis results',
                 onTap: () => context.push('/demo'),
-                color: AppDesignSystem.accentPurple.withValues(alpha: 0.2),
+                color: AppDesignSystem.mainAccent.withValues(alpha: 0.2),
               ),
             ],
           ),

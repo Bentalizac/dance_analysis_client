@@ -8,25 +8,36 @@ class AppDesignSystem {
 
   // ===== COLORS =====
 
-  /// Main background colors
-  static const Color backgroundDark = Color(0xFF0F0F0F);
-  static const Color backgroundMedium = Color(0xFF232323);
-  static const Color backgroundLight = Colors.white;
+  // Branding palette (not for direct UI use as interactive colors)
+  //
+  // Main Accent: 0xFF5F2E8F
+  // Contrast Accent: 0xFF2FF9FA — NOT the hover/interactive color for the main accent
+  // Light Background: 0xFFFaf1ec
+  // Mid Grey: 0xFF626262
+
+  /// Brand colors — use for logo, illustration, identity; not raw UI chrome
+  static const Color brandPurple = Color(0xFF5F2E8F);
+  static const Color brandCyan = Color(0xFF2FF9FA);
+
+  /// Background colors
+  static const Color backgroundLight = Color(0xFFFAF1EC); // warm cream — primary scaffold
+  static const Color backgroundMedium = Color(0xFFFFFFFF); // white — cards / surfaces
+  static const Color backgroundDark = Color(0xFF1A1A1A);  // reserved for dark overlays / future dark mode
 
   /// Accent and interactive colors
-  static const Color accentPurple = Color(0xFFc370df);
-  static const Color accentHoverPurple = Color(0xffe38fff);
+  static const Color mainAccent = Color(0xFF9060C8);
+  static const Color mainAccentHover = Color(0xFFA878D8);
   static const Color errorRed = Color(0xFFDE3737);
 
-  /// Text colors
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFFCCCCCC);
-  static const Color textDisabled = Color(0xFF404040);
-  static const Color textOnLight = Colors.black;
+  /// Text colors (tuned for light backgrounds)
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF626262);
+  static const Color textDisabled = Color(0xFFAAAAAA);
+  static const Color textOnDark = Colors.white;
 
   /// Border and divider colors
-  static Color dividerLight = Colors.white.withValues(alpha: 0.14);
-  static Color dividerError = const Color(0xFFDE3737).withValues(alpha: 0.14);
+  static const Color dividerLight = Color(0xFFE0D8D2); // visible on cream/white
+  static Color dividerError = const Color(0xFFDE3737).withValues(alpha: 0.20);
 
   // ===== TYPOGRAPHY =====
 
@@ -92,18 +103,21 @@ class AppDesignSystem {
 
   /// Returns a complete Material ThemeData based on the design system
   static ThemeData get darkTheme {
-    return ThemeData.dark().copyWith(
-      scaffoldBackgroundColor: backgroundDark,
-      colorScheme: ColorScheme.dark(
-        primary: accentPurple,
-        secondary: accentPurple,
+    return ThemeData.light().copyWith(
+      scaffoldBackgroundColor: backgroundLight,
+      colorScheme: ColorScheme.light(
+        primary: mainAccent,
+        secondary: mainAccent,
         error: errorRed,
         surface: backgroundMedium,
+        onPrimary: Colors.white,
+        onSurface: textPrimary,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: backgroundDark,
+        backgroundColor: backgroundLight,
         foregroundColor: textPrimary,
         elevation: 0,
+        iconTheme: IconThemeData(color: textPrimary),
       ),
       cardTheme: CardThemeData(
         color: backgroundMedium,
@@ -112,7 +126,16 @@ class AppDesignSystem {
         ),
         elevation: 0,
       ),
-      dividerTheme: DividerThemeData(color: dividerLight, thickness: 1),
+      dividerTheme: const DividerThemeData(color: dividerLight, thickness: 1),
+      inputDecorationTheme: const InputDecorationTheme(
+        labelStyle: TextStyle(color: textSecondary),
+        hintStyle: TextStyle(color: textDisabled),
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: textPrimary),
+        bodyMedium: TextStyle(color: textPrimary),
+        bodySmall: TextStyle(color: textSecondary),
+      ),
     );
   }
 }

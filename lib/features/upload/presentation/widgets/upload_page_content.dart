@@ -132,7 +132,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppDesignSystem.backgroundDark,
+        backgroundColor: AppDesignSystem.backgroundLight,
         appBar: AppBar(title: const Text('Upload Video'), centerTitle: true),
         body: Consumer<UploadController>(
           builder: (context, controller, _) {
@@ -195,7 +195,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
           Icon(
             Icons.video_library_outlined,
             size: 64,
-            color: AppDesignSystem.accentPurple,
+            color: AppDesignSystem.mainAccent,
           ),
           const SizedBox(height: AppDesignSystem.spacingMd),
           Text(
@@ -299,8 +299,8 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     playerManager.controller!,
                     allowScrubbing: true,
                     colors: VideoProgressColors(
-                      playedColor: AppDesignSystem.accentPurple,
-                      bufferedColor: AppDesignSystem.accentPurple.withValues(
+                      playedColor: AppDesignSystem.mainAccent,
+                      bufferedColor: AppDesignSystem.mainAccent.withValues(
                         alpha: 0.3,
                       ),
                       backgroundColor: AppDesignSystem.dividerLight,
@@ -334,7 +334,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 IconButton(
                   icon: Icon(
                     playerManager.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: AppDesignSystem.accentPurple,
+                    color: AppDesignSystem.mainAccent,
                   ),
                   onPressed: playerManager.togglePlayPause,
                 ),
@@ -365,7 +365,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
       decoration: InputDecoration(
         labelText: 'Dance Style',
         hintText: 'Select the type of dance',
-        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.accentPurple),
+        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.mainAccent),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         ),
@@ -375,7 +375,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.accentPurple),
+          borderSide: const BorderSide(color: AppDesignSystem.mainAccent),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
@@ -410,25 +410,26 @@ class _UploadPageContentState extends State<UploadPageContent> {
     if (!isUploading) {
       return ElevatedButton(
         onPressed: state.canUpload ? () => controller.upload() : null,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppDesignSystem.spacingMd,
-          ),
-          backgroundColor: AppDesignSystem.accentPurple,
-          foregroundColor: AppDesignSystem.textPrimary,
-          disabledBackgroundColor: AppDesignSystem.backgroundMedium,
-          disabledForegroundColor: AppDesignSystem.textDisabled,
-        ).copyWith(
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.disabled)) {
-              return AppDesignSystem.backgroundMedium;
-            }
-            if (states.contains(WidgetState.hovered)) {
-              return AppDesignSystem.accentHoverPurple;
-            }
-            return AppDesignSystem.accentPurple;
-          }),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppDesignSystem.spacingMd,
+              ),
+              backgroundColor: AppDesignSystem.mainAccent,
+              foregroundColor: AppDesignSystem.textPrimary,
+              disabledBackgroundColor: AppDesignSystem.backgroundMedium,
+              disabledForegroundColor: AppDesignSystem.textDisabled,
+            ).copyWith(
+              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return AppDesignSystem.backgroundMedium;
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return AppDesignSystem.mainAccentHover;
+                }
+                return AppDesignSystem.mainAccent;
+              }),
+            ),
         child: const Text(
           'Upload Video',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -453,7 +454,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
             FractionallySizedBox(
               widthFactor: progress,
               heightFactor: 1.0,
-              child: const ColoredBox(color: AppDesignSystem.accentPurple),
+              child: const ColoredBox(color: AppDesignSystem.mainAccent),
             ),
             // Label
             Center(

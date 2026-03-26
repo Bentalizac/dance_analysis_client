@@ -103,13 +103,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onCancel() {
-    context.pop(false);
+    if (context.canPop()) {
+      context.pop(false);
+    } else {
+      context.go('/');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
+      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('Sign in'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -139,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Icon(Icons.lock_outline, size: 64, color: AppDesignSystem.accentPurple),
+        Icon(Icons.lock_outline, size: 64, color: AppDesignSystem.mainAccent),
         const SizedBox(height: AppDesignSystem.spacingMd),
         Text(
           _isRegisterMode ? 'Create your account' : 'Welcome back',
@@ -227,7 +231,7 @@ class _LoginPageState extends State<LoginPage> {
           color: AppDesignSystem.textSecondary,
         ),
         filled: true,
-        fillColor: AppDesignSystem.backgroundDark,
+        fillColor: AppDesignSystem.backgroundMedium,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         ),
@@ -237,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
+          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
         ),
       ),
       validator: (value) {
@@ -279,7 +283,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         filled: true,
-        fillColor: AppDesignSystem.backgroundDark,
+        fillColor: AppDesignSystem.backgroundMedium,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         ),
@@ -289,7 +293,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
+          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
         ),
       ),
       validator: (value) {
@@ -325,7 +329,7 @@ class _LoginPageState extends State<LoginPage> {
           child: ElevatedButton(
             onPressed: _isSubmitting ? null : _onSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.accentPurple,
+              backgroundColor: AppDesignSystem.mainAccent,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 vertical: AppDesignSystem.spacingSm,
@@ -366,7 +370,7 @@ class _LoginPageState extends State<LoginPage> {
           color: AppDesignSystem.textSecondary,
         ),
         filled: true,
-        fillColor: AppDesignSystem.backgroundDark,
+        fillColor: AppDesignSystem.backgroundMedium,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         ),
@@ -376,7 +380,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.accentPurple),
+          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
         ),
       ),
       validator: (value) {
@@ -422,7 +426,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Text(
             actionText,
             style: AppDesignSystem.smallTextStyle.copyWith(
-              color: AppDesignSystem.accentPurple,
+              color: AppDesignSystem.mainAccent,
               fontWeight: FontWeight.w600,
             ),
           ),

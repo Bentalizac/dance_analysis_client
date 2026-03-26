@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/pages/login_page.dart';
-import '../features/history/presentation/pages/history_page.dart';
+import '../features/group_invites/presentation/pages/accept_invite_page.dart';
+import '../features/groups/presentation/pages/group_detail_page.dart';
+import '../features/groups/presentation/pages/groups_list_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/results/presentation/pages/demo_results_page.dart';
-import '../features/upload/presentation/pages/upload_page.dart';
+import '../features/routine_sessions/presentation/pages/session_detail_page.dart';
+import '../features/routine_sessions/presentation/pages/session_upload_page.dart';
+import '../features/routines/presentation/pages/routine_detail_page.dart';
+import '../features/routines/presentation/pages/routines_list_page.dart';
 import '../shared/design_system/theme.dart';
 import '../shared/services/auth_service.dart';
 
-/// Global key to access navigator state for upload guard
+/// Global key to access navigator state for upload guard.
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Callback to check if user can leave upload page
-/// Set by UploadPageContent when mounted
+/// Callback to check if user can leave the session upload page.
+/// Set by SessionUploadPage when mounted.
 Future<bool> Function()? _uploadPageCanLeaveCallback;
 
-/// Register callback for upload page navigation guard
+/// Register callback for upload page navigation guard.
 void registerUploadPageGuard(Future<bool> Function()? callback) {
   _uploadPageCanLeaveCallback = callback;
 }
@@ -24,12 +29,7 @@ void registerUploadPageGuard(Future<bool> Function()? callback) {
 /// Simple singleton-like access to AuthService for router-level guards.
 ///
 /// go_router redirects do not receive a BuildContext, so we can't use the
-/// usual Provider lookup there. To keep things simple for now, we allow the
-/// auth service to be registered once at app start and then referenced by
-/// router guards.
-///
-/// In main.dart, after creating AuthService, call:
-///   AuthServiceRegistry.instance = authService;
+/// usual Provider lookup there.
 class AuthServiceRegistry {
   AuthServiceRegistry._();
 
@@ -37,47 +37,27 @@ class AuthServiceRegistry {
 }
 
 /// App routing configuration using go_router.
-///
-/// This provides:
-/// - Declarative routing
-/// - Type-safe navigation
-/// - Deep linking support
-/// - Navigation guards
-/// - Route-level state management
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
-  // Global redirect used for simple auth gating on specific routes.
-  //
-  // We treat the following as "protected" routes:
-  //   - /upload
-  //   - /history
-  //   - /profile
-  //
-  // If the user is not authenticated and attempts to access one of these,
-  // they are redirected to /login?from=<original-path>. After a successful
-  // login, the login page can navigate back to `from` if desired.
   redirect: (context, state) {
     final auth = AuthServiceRegistry.instance;
     final isLoggedIn = auth?.isAuthenticated ?? false;
-
     final goingTo = state.uri.path;
 
-    // Never redirect from login itself to avoid loops.
-    if (goingTo == '/login') {
-      return null;
-    }
+    if (goingTo == '/login') return null;
 
-    // Only gate the specific routes we care about.
     final isProtected =
-        goingTo == '/upload' || goingTo == '/history' || goingTo == '/profile';
+        goingTo == '/profile' ||
+        goingTo.startsWith('/routines') ||
+        goingTo.startsWith('/sessions') ||
+        goingTo.startsWith('/groups');
 
     if (!isLoggedIn && isProtected) {
       final from = Uri.encodeComponent(state.uri.toString());
       return '/login?from=$from';
     }
 
-    // No redirect.
     return null;
   },
   routes: [
@@ -86,38 +66,72 @@ final GoRouter appRouter = GoRouter(
       path: '/login',
       name: 'login',
       builder: (context, state) {
-        // Optional "from" parameter so login page can send the user back.
         final from = state.uri.queryParameters['from'];
         return LoginPage(initialRedirectPath: from);
       },
     ),
+    GoRoute(
+      path: '/accept-invite/:token',
+      name: 'acceptInvite',
+      builder: (context, state) =>
+          AcceptInvitePage(token: state.pathParameters['token']!),
+    ),
+    GoRoute(
+      path: '/demo',
+      name: 'demo',
+      builder: (context, state) => const DemoResultsPage(),
+    ),
+
+    // Main scaffold with persistent bottom navigation
     ShellRoute(
-      builder: (context, state, child) {
-        return _MainScaffold(child: child);
-      },
+      builder: (context, state, child) => _MainScaffold(child: child),
       routes: [
+        // Home
         GoRoute(
           path: '/',
           name: 'home',
           pageBuilder: (context, state) =>
               NoTransitionPage(key: state.pageKey, child: const HomePage()),
         ),
+
+        // Routines (top-level, user-owned)
         GoRoute(
-          path: '/upload',
-          name: 'upload',
-          pageBuilder: (context, state) {
-            return NoTransitionPage(
-              key: state.pageKey,
-              child: const UploadPage(),
-            );
-          },
+          path: '/routines',
+          name: 'routines',
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const RoutinesListPage(),
+          ),
+          routes: [
+            GoRoute(
+              path: ':routineId',
+              name: 'routineDetail',
+              builder: (context, state) => RoutineDetailPage(
+                routineId: state.pathParameters['routineId']!,
+              ),
+            ),
+          ],
         ),
+
+        // Groups (session-centric — sessions tab replaces routines tab)
         GoRoute(
-          path: '/history',
-          name: 'history',
-          pageBuilder: (context, state) =>
-              NoTransitionPage(key: state.pageKey, child: const HistoryPage()),
+          path: '/groups',
+          name: 'groups',
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: const GroupsListPage(),
+          ),
+          routes: [
+            GoRoute(
+              path: ':groupId',
+              name: 'groupDetail',
+              builder: (context, state) =>
+                  GroupDetailPage(groupId: state.pathParameters['groupId']!),
+            ),
+          ],
         ),
+
+        // Profile
         GoRoute(
           path: '/profile',
           name: 'profile',
@@ -128,19 +142,26 @@ final GoRouter appRouter = GoRouter(
         ),
       ],
     ),
-    // Routes outside the main scaffold (full screen)
+
+    // Session routes (full-screen, outside shell)
     GoRoute(
-      path: '/demo',
-      name: 'demo',
-      builder: (context, state) => const DemoResultsPage(),
+      path: '/sessions/:sessionId',
+      name: 'sessionDetail',
+      builder: (context, state) =>
+          SessionDetailPage(sessionId: state.pathParameters['sessionId']!),
+      routes: [
+        GoRoute(
+          path: 'upload',
+          name: 'sessionUpload',
+          builder: (context, state) =>
+              SessionUploadPage(sessionId: state.pathParameters['sessionId']!),
+        ),
+      ],
     ),
   ],
 );
 
-/// Main scaffold with bottom navigation bar using ShellRoute.
-///
-/// ShellRoute keeps the scaffold persistent across navigation, maintaining
-/// the bottom nav state. The child widget changes based on the current route.
+/// Main scaffold with bottom navigation.
 class _MainScaffold extends StatelessWidget {
   const _MainScaffold({required this.child});
 
@@ -149,7 +170,7 @@ class _MainScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
+      backgroundColor: AppDesignSystem.backgroundLight,
       body: child,
       bottomNavigationBar: _buildBottomNavigationBar(context),
     );
@@ -172,7 +193,7 @@ class _MainScaffold extends StatelessWidget {
           onTap: (index) => _onTabTapped(context, index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: AppDesignSystem.backgroundMedium,
-          selectedItemColor: AppDesignSystem.accentPurple,
+          selectedItemColor: AppDesignSystem.mainAccent,
           unselectedItemColor: AppDesignSystem.textSecondary,
           selectedFontSize: 12,
           unselectedFontSize: 12,
@@ -184,14 +205,14 @@ class _MainScaffold extends StatelessWidget {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.upload_file_outlined),
-              activeIcon: Icon(Icons.upload_file),
-              label: 'Upload',
+              icon: Icon(Icons.library_music_outlined),
+              activeIcon: Icon(Icons.library_music),
+              label: 'Routines',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_outlined),
-              activeIcon: Icon(Icons.history),
-              label: 'History',
+              icon: Icon(Icons.group_outlined),
+              activeIcon: Icon(Icons.group),
+              label: 'Groups',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
@@ -205,8 +226,8 @@ class _MainScaffold extends StatelessWidget {
   }
 
   int _getIndexFromPath(String path) {
-    if (path.startsWith('/upload')) return 1;
-    if (path.startsWith('/history')) return 2;
+    if (path.startsWith('/routines')) return 1;
+    if (path.startsWith('/groups')) return 2;
     if (path.startsWith('/profile')) return 3;
     return 0; // home
   }
@@ -215,37 +236,32 @@ class _MainScaffold extends StatelessWidget {
     final currentLocation = GoRouterState.of(context).uri.path;
     final currentIndex = _getIndexFromPath(currentLocation);
 
-    // Same tab tapped - no action
     if (index == currentIndex) return;
 
-    // Check if leaving upload page with unsaved work
-    if (currentLocation.startsWith('/upload') &&
+    // Guard: check if leaving session upload with unsaved work
+    if (currentLocation.startsWith('/sessions') &&
+        currentLocation.endsWith('/upload') &&
         _uploadPageCanLeaveCallback != null) {
       final canLeave = await _uploadPageCanLeaveCallback!();
-      if (!canLeave) return; // User cancelled
+      if (!canLeave) return;
     }
 
-    // Navigate to selected tab
     if (!context.mounted) return;
 
     switch (index) {
       case 0:
         context.go('/');
-        break;
       case 1:
-        context.go('/upload');
-        break;
+        context.go('/routines');
       case 2:
-        context.go('/history');
-        break;
+        context.go('/groups');
       case 3:
         context.go('/profile');
-        break;
     }
   }
 }
 
-/// Temporary stub page for features not yet implemented
+/// Temporary stub page for features not yet implemented.
 class _StubPage extends StatelessWidget {
   const _StubPage({required this.title, required this.icon});
 
@@ -255,7 +271,7 @@ class _StubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundDark,
+      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: Text(title), centerTitle: true),
       body: Center(
         child: Container(

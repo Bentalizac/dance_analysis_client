@@ -46,7 +46,7 @@ class VideoPlaceholder extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
             decoration: BoxDecoration(
-              color: AppDesignSystem.backgroundDark,
+              color: AppDesignSystem.backgroundMedium,
               shape: BoxShape.circle,
             ),
             child: Icon(

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 import '../../../generated/api/models/job_response.dart';
-import '../../../generated/api/models/job_status.dart';
 import '../../../models/feedback_item.dart';
 import '../../../models/history_item.dart';
 import '../../../models/submission.dart';
@@ -137,8 +136,8 @@ class HistoryRepository {
 
     // 2. Fallback to network fetch
     try {
-      final dynamic report = await _api.client.videos
-          .getFeedbackReportApiV1VideosJobIdReportGet(jobId: jobId);
+      final dynamic report = await _api.client.jobArtifacts
+          .getReportJsonApiV1JobsJobIdArtifactsReportGet(jobId: jobId);
 
       // If the backend ever returns a raw JSON string, decode it.
       final dynamic decoded = report is String ? jsonDecode(report) : report;

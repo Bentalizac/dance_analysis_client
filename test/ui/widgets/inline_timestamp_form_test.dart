@@ -634,7 +634,7 @@ void main() {
 
         expect(
           button.style?.backgroundColor?.resolve({}),
-          AppDesignSystem.accentPurple,
+          AppDesignSystem.mainAccent,
         );
       });
 

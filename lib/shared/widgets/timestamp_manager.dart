@@ -158,8 +158,8 @@ class TimestampManager extends StatelessWidget {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Add'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.accentPurple,
-              foregroundColor: AppDesignSystem.backgroundDark,
+              backgroundColor: AppDesignSystem.mainAccent,
+              foregroundColor: AppDesignSystem.textOnDark,
               disabledBackgroundColor: AppDesignSystem.textDisabled,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.spacingMd,

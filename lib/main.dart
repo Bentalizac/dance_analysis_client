@@ -6,8 +6,21 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/routes.dart';
+import 'features/dancer_slots/data/dancer_slots_data_source.dart';
+import 'features/dancer_slots/presentation/controllers/dancer_slots_controller.dart';
+import 'features/group_invites/data/group_invites_data_source.dart';
+import 'features/groups/data/groups_data_source.dart';
+import 'features/groups/presentation/controllers/groups_controller.dart';
 import 'features/history/data/history_local_data_source.dart';
 import 'features/history/data/history_repository.dart';
+import 'features/routine_notes/data/notes_data_source.dart';
+import 'features/routine_sessions/data/routine_sessions_data_source.dart';
+import 'features/routine_sessions/presentation/controllers/routine_sessions_controller.dart';
+import 'features/routine_videos/data/videos_data_source.dart';
+import 'features/routines/data/routines_data_source.dart';
+import 'features/routines/presentation/controllers/routines_controller.dart';
+import 'features/slot_assignments/data/slot_assignments_data_source.dart';
+import 'features/slot_assignments/presentation/controllers/slot_assignments_controller.dart';
 import 'features/upload/domain/repositories/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_service.dart';
@@ -15,13 +28,11 @@ import 'shared/services/auth_service.dart';
 import 'shared/services/video_service.dart';
 
 void main() {
-  // Set up global error handling
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       final prefs = await SharedPreferences.getInstance();
 
-      // Capture Flutter framework errors
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
         _logError('Flutter Error', details.exception, details.stack);
@@ -29,24 +40,17 @@ void main() {
 
       runApp(MyApp(prefs: prefs));
     },
-    // Capture async errors not caught by Flutter
     (error, stack) {
       _logError('Async Error', error, stack);
     },
   );
 }
 
-/// Log errors for debugging and future crash reporting integration
 void _logError(String context, Object error, StackTrace? stack) {
-  // For MVP, just print to console
-  // In production, this would send to crash reporting service (e.g., Sentry, Firebase Crashlytics)
   debugPrint('[$context] $error');
-  if (stack != null) {
-    debugPrint('Stack trace:\n$stack');
-  }
+  if (stack != null) debugPrint('Stack trace:\n$stack');
 }
 
-/// Custom error widget shown when a widget build error occurs
 class _CustomErrorWidget extends StatelessWidget {
   const _CustomErrorWidget({required this.details});
 
@@ -55,17 +59,13 @@ class _CustomErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppDesignSystem.backgroundDark,
+      color: AppDesignSystem.backgroundMedium,
       child: Container(
         padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppDesignSystem.errorRed,
-            ),
+            Icon(Icons.error_outline, size: 64, color: AppDesignSystem.errorRed),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
               'Something went wrong',
@@ -79,19 +79,18 @@ class _CustomErrorWidget extends StatelessWidget {
             const SizedBox(height: AppDesignSystem.spacingSm),
             Text(
               'The app encountered an error. Please restart the app.',
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
-              ),
+              style: AppDesignSystem.feedbackStyle
+                  .copyWith(color: AppDesignSystem.textSecondary),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppDesignSystem.spacingLg),
-            // Show error details in debug mode
-            if (kDebugMode)
+            if (kDebugMode) ...[
+              const SizedBox(height: AppDesignSystem.spacingLg),
               Container(
                 padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
                 decoration: BoxDecoration(
                   color: AppDesignSystem.backgroundMedium,
-                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
+                  borderRadius:
+                      BorderRadius.circular(AppDesignSystem.radiusXs),
                 ),
                 child: Text(
                   details.exception.toString(),
@@ -101,6 +100,7 @@ class _CustomErrorWidget extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -108,9 +108,6 @@ class _CustomErrorWidget extends StatelessWidget {
   }
 }
 
-/// Root widget for the MVP upload client.
-///
-/// Kept intentionally small: a single screen with basic theming.
 class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.prefs});
 
@@ -120,42 +117,100 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Provide services as singletons
+        // Core services
         Provider<VideoService>(create: (_) => VideoService()),
         Provider<ApiService>(create: (_) => ApiService()),
-        // Auth service backed by ApiService
         ChangeNotifierProvider<AuthService>(
           create: (context) {
             final apiService = context.read<ApiService>();
             final auth = AuthService(apiService);
-            // Register for router-level guards
             AuthServiceRegistry.instance = auth;
             return auth;
           },
         ),
-        // Provide repositories
+
+        // Repositories
         ProxyProvider<VideoService, VideoRepository>(
-          update: (context, videoService, previous) =>
-              VideoRepository(videoService),
+          update: (_, videoService, _) => VideoRepository(videoService),
         ),
-        // History data layer
         Provider<HistoryLocalDataSource>(
           create: (_) => HistoryLocalDataSource(prefs),
         ),
         ProxyProvider2<HistoryLocalDataSource, ApiService, HistoryRepository>(
-          update: (context, localDataSource, apiService, previous) =>
-              HistoryRepository(
+          update: (_, localDataSource, apiService, _) => HistoryRepository(
             localDataSource: localDataSource,
             apiService: apiService,
           ),
         ),
+
+        // Data sources (global — stateless, safe to share)
+        Provider<GroupsDataSource>(
+          create: (context) =>
+              GroupsDataSource(context.read<ApiService>().client),
+        ),
+        Provider<GroupInvitesDataSource>(
+          create: (context) =>
+              GroupInvitesDataSource(context.read<ApiService>().client),
+        ),
+        Provider<RoutinesDataSource>(
+          create: (context) =>
+              RoutinesDataSource(context.read<ApiService>().client),
+        ),
+        Provider<RoutineSessionsDataSource>(
+          create: (context) =>
+              RoutineSessionsDataSource(context.read<ApiService>().client),
+        ),
+        Provider<VideosDataSource>(
+          create: (context) =>
+              VideosDataSource(context.read<ApiService>().client),
+        ),
+        Provider<NotesDataSource>(
+          create: (context) =>
+              NotesDataSource(context.read<ApiService>().client),
+        ),
+        Provider<DancerSlotsDataSource>(
+          create: (context) =>
+              DancerSlotsDataSource(context.read<ApiService>().client),
+        ),
+        Provider<SlotAssignmentsDataSource>(
+          create: (context) =>
+              SlotAssignmentsDataSource(context.read<ApiService>().client),
+        ),
+
+        // Global controllers (list-level state only)
+        // Note: VideosController and NotesController are scoped to
+        // SessionDetailPage, not provided globally.
+        ChangeNotifierProvider<GroupsController>(
+          create: (context) => GroupsController(
+            dataSource: context.read<GroupsDataSource>(),
+          ),
+        ),
+        ChangeNotifierProvider<RoutinesController>(
+          create: (context) => RoutinesController(
+            dataSource: context.read<RoutinesDataSource>(),
+          ),
+        ),
+        ChangeNotifierProvider<RoutineSessionsController>(
+          create: (context) => RoutineSessionsController(
+            dataSource: context.read<RoutineSessionsDataSource>(),
+          ),
+        ),
+        ChangeNotifierProvider<DancerSlotsController>(
+          create: (context) => DancerSlotsController(
+            dataSource: context.read<DancerSlotsDataSource>(),
+          ),
+        ),
+        ChangeNotifierProvider<SlotAssignmentsController>(
+          create: (context) => SlotAssignmentsController(
+            dataSource: context.read<SlotAssignmentsDataSource>(),
+          ),
+        ),
       ],
       child: MaterialApp.router(
-        title: 'Dance Coaching Upload',
+        title: 'Dance Coach',
         debugShowCheckedModeBanner: false,
         theme: AppDesignSystem.darkTheme,
         routerConfig: appRouter,
-        // Custom error widget for better UX
         builder: (context, child) {
           ErrorWidget.builder = (FlutterErrorDetails details) {
             return _CustomErrorWidget(details: details);
