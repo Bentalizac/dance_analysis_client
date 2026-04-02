@@ -26,15 +26,18 @@ class VideoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       width: double.infinity,
       height: height,
       margin: const EdgeInsets.all(AppDesignSystem.spacingMd),
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundMedium,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
         border: Border.all(
-          color: AppDesignSystem.dividerLight,
+          color: colorScheme.outline,
           width: 2,
           strokeAlign: BorderSide.strokeAlignInside,
         ),
@@ -42,32 +45,26 @@ class VideoPlaceholder extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon container
           Container(
             padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
             decoration: BoxDecoration(
-              color: AppDesignSystem.backgroundMedium,
+              color: colorScheme.surface,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 48,
-              color: AppDesignSystem.textSecondary.withValues(alpha: 0.6),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: AppDesignSystem.spacingMd),
-
-          // Main message
           Text(
             message,
-            style: AppDesignSystem.timestampStyle.copyWith(
-              color: AppDesignSystem.textPrimary,
+            style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppDesignSystem.spacingXs),
-
-          // Subtitle
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDesignSystem.spacingXl,
@@ -75,8 +72,8 @@ class VideoPlaceholder extends StatelessWidget {
             child: Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),

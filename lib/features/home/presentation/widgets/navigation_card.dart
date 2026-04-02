@@ -20,25 +20,28 @@ class NavigationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
       child: Container(
         padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
         decoration: BoxDecoration(
-          color: color ?? AppDesignSystem.backgroundMedium,
+          color: color ?? colorScheme.surface,
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-          border: Border.all(color: AppDesignSystem.dividerLight, width: 1),
+          border: Border.all(color: colorScheme.outline, width: 1),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
               decoration: BoxDecoration(
-                color: AppDesignSystem.backgroundMedium,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
               ),
-              child: Icon(icon, color: AppDesignSystem.mainAccent, size: 32),
+              child: Icon(icon, color: colorScheme.primary, size: 32),
             ),
             const SizedBox(width: AppDesignSystem.spacingMd),
             Expanded(
@@ -47,16 +50,15 @@ class NavigationCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppDesignSystem.timestampStyle.copyWith(
-                      color: AppDesignSystem.textPrimary,
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppDesignSystem.spacingXs),
                   Text(
                     subtitle,
-                    style: AppDesignSystem.feedbackStyle.copyWith(
-                      color: AppDesignSystem.textSecondary,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -64,7 +66,7 @@ class NavigationCard extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: AppDesignSystem.textSecondary,
+              color: colorScheme.onSurfaceVariant,
               size: 16,
             ),
           ],

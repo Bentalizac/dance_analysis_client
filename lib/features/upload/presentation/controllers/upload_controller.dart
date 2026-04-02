@@ -1,15 +1,14 @@
-import 'dart:io';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../features/routine_videos/data/videos_data_source.dart';
-import '../../../../models/dance_style.dart';
-import '../../../../models/video_metadata.dart';
-import '../../../../models/video_timestamp.dart';
+import '../../../../shared/models/video_timestamp.dart';
 import '../../../../shared/services/video_service.dart';
-import '../../domain/repositories/video_repository.dart';
+import '../../data/presigned_upload_io.dart'
+    if (dart.library.html) '../../data/presigned_upload_web.dart';
+import '../../data/video_repository.dart';
+import '../../../../generated/api/models/dance_style.dart';
+import '../../domain/models/video_metadata.dart';
 import 'upload_state.dart';
 
 /// ChangeNotifier that coordinates the session-scoped upload flow:
@@ -283,51 +282,25 @@ class UploadController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// PUT video bytes to the presigned storage URL using a bare Dio instance
-  /// (no auth headers — the presigned URL is self-authenticating).
+  /// PUT video bytes to the presigned storage URL.
+  ///
+  /// Delegates to a platform-specific implementation: on native the file is
+  /// streamed from disk; on web it is read into memory first (dart:io is not
+  /// available in the browser).  No auth headers are sent — the presigned URL
+  /// is self-authenticating.
   Future<void> _putToPresignedUrl(
     String uploadUrl,
     SelectedVideo video, {
     void Function(int sent, int total)? onSendProgress,
   }) async {
-    final file = File(video.xFile.path);
-    if (!await file.exists()) {
-      throw const UploadException(
-        'Local video file no longer exists. Please re-select the video.',
-      );
-    }
-
-    final length = await file.length();
-    final stream = file.openRead();
-
-    final s3Dio = Dio(BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(minutes: 15),
-      receiveTimeout: const Duration(minutes: 5),
-    ));
-
     try {
-      await s3Dio.put<void>(
+      await putVideoToPresignedUrl(
         uploadUrl,
-        data: stream,
-        options: Options(
-          headers: {'Content-Type': 'video/mp4', 'Content-Length': length},
-          followRedirects: true,
-        ),
+        video,
         onSendProgress: onSendProgress,
       );
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final body = e.response?.data;
-      final msg = StringBuffer('Failed to upload video to storage.');
-      if (status != null) msg.write(' HTTP $status.');
-      if (e.message != null) msg.write(' ${e.message}');
-      if (body != null) msg.write(' Response: $body');
-      throw UploadException(msg.toString());
-    } catch (e) {
-      throw UploadException('Unexpected error while uploading to storage: $e');
-    } finally {
-      s3Dio.close();
+    } on PresignedUploadException catch (e) {
+      throw UploadException(e.message);
     }
   }
 }

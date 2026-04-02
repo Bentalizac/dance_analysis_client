@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../generated/api/models/group_membership_response.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../data/group_invites_data_source.dart';
 
@@ -21,7 +22,7 @@ class AcceptInvitePage extends StatefulWidget {
 class _AcceptInvitePageState extends State<AcceptInvitePage> {
   bool _isAccepting = false;
   String? _error;
-  bool _accepted = false;
+  GroupMembershipResponse? _membership;
 
   @override
   void initState() {
@@ -37,11 +38,11 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
 
     try {
       final ds = context.read<GroupInvitesDataSource>();
-      await ds.acceptInvite(widget.token);
+      final membership = await ds.acceptInvite(widget.token);
       if (!mounted) return;
       setState(() {
         _isAccepting = false;
-        _accepted = true;
+        _membership = membership;
       });
     } on AppException catch (e) {
       if (!mounted) return;
@@ -54,8 +55,10 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('Accept Invite')),
       body: Center(
         child: Padding(
@@ -69,37 +72,44 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
                     Text('Accepting invite...'),
                   ],
                 )
-              : _accepted
+              : _membership != null
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle,
-                            size: 64, color: Colors.green),
+                        Icon(
+                          Icons.check_circle,
+                          size: 64,
+                          color: AppDesignSystem.success,
+                        ),
                         const SizedBox(height: AppDesignSystem.spacingMd),
-                        Text('Invite accepted!',
-                            style: TextStyle(
-                                color: AppDesignSystem.textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold)),
+                        Text(
+                          'Invite accepted!',
+                          style: textTheme.titleLarge,
+                        ),
                         const SizedBox(height: AppDesignSystem.spacingLg),
                         ElevatedButton(
-                          onPressed: () => context.go('/groups'),
-                          child: const Text('Go to Groups'),
+                          onPressed: () =>
+                              context.go('/groups/${_membership!.groupId}'),
+                          child: const Text('Go to Group'),
                         ),
                       ],
                     )
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.error_outline,
-                            size: 64, color: AppDesignSystem.errorRed),
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: colorScheme.error,
+                        ),
                         const SizedBox(height: AppDesignSystem.spacingMd),
                         Text(
-                            _error ??
-                                'Invite is invalid or expired.',
-                            style: AppDesignSystem.feedbackStyle.copyWith(
-                                color: AppDesignSystem.textSecondary),
-                            textAlign: TextAlign.center),
+                          _error ?? 'Invite is invalid or expired.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: AppDesignSystem.spacingLg),
                         ElevatedButton(
                           onPressed: () => context.go('/'),

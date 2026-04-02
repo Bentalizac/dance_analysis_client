@@ -6,15 +6,16 @@ import '../../../../generated/api/models/group_membership_response.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../group_invites/presentation/widgets/create_invite_dialog.dart';
 import '../../../group_invites/presentation/widgets/invites_tab.dart';
-import '../../../routine_sessions/presentation/controllers/routine_sessions_controller.dart';
-import '../../../routine_sessions/presentation/controllers/routine_sessions_state.dart';
-import '../../../routine_sessions/presentation/widgets/create_session_in_group_dialog.dart';
-import '../../../routine_sessions/presentation/widgets/session_card.dart';
+import '../../../routine_instances/presentation/controllers/routine_instances_controller.dart';
+import '../../../routine_instances/presentation/controllers/routine_instances_state.dart';
+import '../../../routine_instances/presentation/widgets/create_instance_in_group_dialog.dart';
+import '../../../routine_instances/presentation/widgets/instance_card.dart';
 import '../../../routines/presentation/controllers/routines_controller.dart';
 import '../controllers/groups_controller.dart';
 import '../controllers/groups_state.dart';
+import '../../../../shared/services/auth_service.dart';
 
-/// Shows group details with tabs: Sessions, Members, Invites.
+/// Shows group details with tabs: Routines, Members, Invites.
 class GroupDetailPage extends StatefulWidget {
   const GroupDetailPage({super.key, required this.groupId});
 
@@ -34,7 +35,7 @@ class _GroupDetailPageState extends State<GroupDetailPage>
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GroupsController>().loadGroupDetail(widget.groupId);
-      context.read<RoutineSessionsController>().loadGroupSessions(
+      context.read<RoutineInstancesController>().loadGroupInstances(
         widget.groupId,
       );
     });
@@ -54,17 +55,13 @@ class _GroupDetailPageState extends State<GroupDetailPage>
         final group = state.selectedGroup;
 
         return Scaffold(
-          backgroundColor: AppDesignSystem.backgroundLight,
           appBar: AppBar(
             title: Text(group?.name ?? 'Group'),
             centerTitle: true,
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: AppDesignSystem.mainAccent,
-              labelColor: AppDesignSystem.mainAccent,
-              unselectedLabelColor: AppDesignSystem.textSecondary,
               tabs: const [
-                Tab(text: 'Sessions'),
+                Tab(text: 'Routines'),
                 Tab(text: 'Members'),
                 Tab(text: 'Invites'),
               ],
@@ -75,7 +72,7 @@ class _GroupDetailPageState extends State<GroupDetailPage>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _SessionsTab(groupId: widget.groupId),
+                    _RoutinesTab(groupId: widget.groupId),
                     _MembersTab(
                       members: state.members,
                       groupId: widget.groupId,
@@ -95,16 +92,14 @@ class _GroupDetailPageState extends State<GroupDetailPage>
       animation: _tabController,
       builder: (context, _) {
         switch (_tabController.index) {
-          case 0: // Sessions
+          case 0: // Routines
             return FloatingActionButton(
-              onPressed: () => _showCreateSessionDialog(context),
-              backgroundColor: AppDesignSystem.mainAccent,
+              onPressed: () => _showCreateInstanceDialog(context),
               child: const Icon(Icons.add),
             );
           case 2: // Invites
             return FloatingActionButton(
               onPressed: () => _showCreateInviteDialog(context),
-              backgroundColor: AppDesignSystem.mainAccent,
               child: const Icon(Icons.person_add),
             );
           default:
@@ -114,14 +109,14 @@ class _GroupDetailPageState extends State<GroupDetailPage>
     );
   }
 
-  void _showCreateSessionDialog(BuildContext context) {
+  void _showCreateInstanceDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => CreateSessionInGroupDialog(
+      builder: (_) => CreateInstanceInGroupDialog(
         onSubmit: (title, danceId) async {
           // Capture controllers before any awaits
           final routinesCtrl = context.read<RoutinesController>();
-          final sessionsCtrl = context.read<RoutineSessionsController>();
+          final instancesCtrl = context.read<RoutineInstancesController>();
 
           // Step 1: Create the routine
           final routine = await routinesCtrl.createRoutine(
@@ -130,17 +125,17 @@ class _GroupDetailPageState extends State<GroupDetailPage>
           );
           if (routine == null) return false;
 
-          // Step 2: Create a session tied to this group
-          final session = await sessionsCtrl.createSession(
+          // Step 2: Create an instance tied to this group
+          final instance = await instancesCtrl.createInstance(
             routine.id,
             groupId: widget.groupId,
           );
-          if (session == null) return false;
+          if (instance == null) return false;
 
-          // Refresh the sessions list and navigate to the new session
-          await sessionsCtrl.loadGroupSessions(widget.groupId);
+          // Refresh the instances list and navigate to the new instance
+          await instancesCtrl.loadGroupInstances(widget.groupId);
           if (context.mounted) {
-            context.push('/sessions/${session.id}');
+            context.push('/instances/${instance.id}');
           }
           return true;
         },
@@ -156,23 +151,26 @@ class _GroupDetailPageState extends State<GroupDetailPage>
   }
 }
 
-/// Sessions tab within GroupDetailPage.
-class _SessionsTab extends StatelessWidget {
-  const _SessionsTab({required this.groupId});
+/// Routines tab within GroupDetailPage.
+class _RoutinesTab extends StatelessWidget {
+  const _RoutinesTab({required this.groupId});
 
   final String groupId;
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<RoutineSessionsController>(
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Consumer<RoutineInstancesController>(
       builder: (context, ctrl, _) {
-        if (ctrl.state.status == RoutineSessionsStatus.loading &&
-            ctrl.state.sessions.isEmpty) {
+        if (ctrl.state.status == RoutineInstancesStatus.loading &&
+            ctrl.state.instances.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final sessions = ctrl.state.sessions;
-        if (sessions.isEmpty) {
+        final instances = ctrl.state.instances;
+        if (instances.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -180,12 +178,14 @@ class _SessionsTab extends StatelessWidget {
                 Icon(
                   Icons.video_library_outlined,
                   size: 64,
-                  color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: AppDesignSystem.spacingMd),
                 Text(
-                  'No sessions yet',
-                  style: TextStyle(color: AppDesignSystem.textSecondary),
+                  'No routines yet',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -193,17 +193,17 @@ class _SessionsTab extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: () => ctrl.loadGroupSessions(groupId),
+          onRefresh: () => ctrl.loadGroupInstances(groupId),
           child: ListView.separated(
             padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-            itemCount: sessions.length,
+            itemCount: instances.length,
             separatorBuilder: (_, _) =>
                 const SizedBox(height: AppDesignSystem.spacingSm),
             itemBuilder: (context, index) {
-              final session = sessions[index];
-              return SessionCard(
-                session: session,
-                onTap: () => context.push('/sessions/${session.id}'),
+              final instance = instances[index];
+              return InstanceCard(
+                instance: instance,
+                onTap: () => context.push('/instances/${instance.id}'),
               );
             },
           ),
@@ -227,6 +227,10 @@ class _MembersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final currentUserId = context.read<AuthService>().currentUser?.id;
+
     if (members.isEmpty) {
       return const Center(child: Text('No members.'));
     }
@@ -236,35 +240,28 @@ class _MembersTab extends StatelessWidget {
       itemCount: members.length,
       itemBuilder: (context, index) {
         final member = members[index];
+        final isCurrentUser = member.userId == currentUserId;
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: AppDesignSystem.mainAccent.withValues(alpha: 0.2),
-
-            child: Icon(Icons.person, color: AppDesignSystem.mainAccent),
+            backgroundColor: colorScheme.primaryContainer,
+            child: Icon(Icons.person, color: colorScheme.primary),
           ),
           title: Text(
-            'User ${member.userId}',
-            style: TextStyle(color: AppDesignSystem.textPrimary),
+            isCurrentUser ? 'You' : member.username,
+            style: textTheme.bodyMedium,
           ),
-          subtitle: Text(
-            member.role.toString(),
-            style: TextStyle(color: AppDesignSystem.textSecondary),
-          ),
+          subtitle: Text(member.role.toString(), style: textTheme.bodySmall),
           trailing: member.role.toString() != 'owner'
               ? IconButton(
                   icon: Icon(
                     Icons.remove_circle_outline,
-                    color: AppDesignSystem.errorRed,
+                    color: colorScheme.error,
                   ),
                   onPressed: () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: AppDesignSystem.backgroundMedium,
-                        title: Text(
-                          'Remove member?',
-                          style: TextStyle(color: AppDesignSystem.textPrimary),
-                        ),
+                        title: const Text('Remove member?'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
@@ -274,7 +271,7 @@ class _MembersTab extends StatelessWidget {
                             onPressed: () => Navigator.pop(ctx, true),
                             child: Text(
                               'Remove',
-                              style: TextStyle(color: AppDesignSystem.errorRed),
+                              style: TextStyle(color: colorScheme.error),
                             ),
                           ),
                         ],

@@ -28,7 +28,6 @@ class _GroupsListPageState extends State<GroupsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('Groups'), centerTitle: true),
       body: Consumer<GroupsController>(
         builder: (context, controller, _) {
@@ -66,13 +65,15 @@ class _GroupsListPageState extends State<GroupsListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateGroupDialog(context),
-        backgroundColor: AppDesignSystem.mainAccent,
         child: const Icon(Icons.add),
       ),
     );
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
@@ -82,22 +83,18 @@ class _GroupsListPageState extends State<GroupsListPage> {
             Icon(
               Icons.group_outlined,
               size: 64,
-              color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
               'No groups yet',
-              style: TextStyle(
-                color: AppDesignSystem.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: textTheme.titleLarge,
             ),
             const SizedBox(height: AppDesignSystem.spacingSm),
             Text(
               'Create a group to start collaborating.',
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -114,6 +111,9 @@ class _GroupsListPageState extends State<GroupsListPage> {
   }
 
   Widget _buildErrorState(String? message, GroupsController controller) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
@@ -123,13 +123,13 @@ class _GroupsListPageState extends State<GroupsListPage> {
             Icon(
               Icons.error_outline,
               size: 64,
-              color: AppDesignSystem.errorRed,
+              color: colorScheme.error,
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
               message ?? 'Failed to load groups.',
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

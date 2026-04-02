@@ -27,8 +27,10 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('My Routines'), centerTitle: true),
       body: Consumer<RoutinesController>(
         builder: (context, ctrl, _) {
@@ -43,7 +45,7 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             return Center(
               child: Text(
                 state.errorMessage ?? 'Failed to load routines.',
-                style: TextStyle(color: AppDesignSystem.errorRed),
+                style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
               ),
             );
           }
@@ -56,19 +58,19 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
                   Icon(
                     Icons.library_music_outlined,
                     size: 64,
-                    color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: AppDesignSystem.spacingMd),
                   Text(
                     'No routines yet',
-                    style: TextStyle(color: AppDesignSystem.textSecondary),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppDesignSystem.spacingSm),
                   Text(
                     'Tap + to create your first routine.',
-                    style: AppDesignSystem.smallTextStyle.copyWith(
-                      color: AppDesignSystem.textSecondary,
-                    ),
+                    style: textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -95,7 +97,6 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateRoutineDialog(context),
-        backgroundColor: AppDesignSystem.mainAccent,
         child: const Icon(Icons.add),
       ),
     );

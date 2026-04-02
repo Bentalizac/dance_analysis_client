@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../models/pose_data.dart';
+import '../models/pose_data.dart';
 import 'pose_overlay_painter.dart';
 
 /// Video player with pose skeleton overlay
@@ -61,13 +61,15 @@ class _VideoPlayerWithPoseOverlayState
     try {
       VideoPlayerController controller;
 
-      if (kIsWeb) {
-        // For web, use network/asset approach
+      final isNetworkUrl = widget.videoPath.startsWith('http://') ||
+          widget.videoPath.startsWith('https://');
+
+      if (kIsWeb || isNetworkUrl) {
         controller = VideoPlayerController.networkUrl(
           Uri.parse(widget.videoPath),
         );
       } else {
-        // For mobile/desktop, use file
+        // Local file path
         controller = VideoPlayerController.file(File(widget.videoPath));
       }
 

@@ -1,4 +1,4 @@
-import 'package:dance_analysis_client/models/video_timestamp.dart';
+import 'package:dance_analysis_client/shared/models/video_timestamp.dart';
 import 'package:dance_analysis_client/shared/design_system/theme.dart';
 import 'package:dance_analysis_client/shared/widgets/inline_timestamp_form.dart';
 import 'package:flutter/material.dart';

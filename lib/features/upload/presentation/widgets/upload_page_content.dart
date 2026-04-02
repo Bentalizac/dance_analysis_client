@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../config/routes.dart';
-import '../../../../models/dance_style.dart';
+import '../../../../generated/api/models/dance_style.dart';
+import '../../../../shared/extensions/dance_style_extensions.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../../../../shared/widgets/discard_confirmation_dialog.dart';
@@ -31,7 +33,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
   Future<bool> _ensureAuthenticatedForUpload() async {
     final auth = context.read<AuthService>();
 
-    // Already signed in – allow immediately
     if (auth.isAuthenticated) {
       return true;
     }
@@ -41,12 +42,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
     });
 
     try {
-      // Push login page and wait for result
       final result = await context.push<bool>('/login');
-
-      // Consider it successful only if:
-      // - login route returned true AND
-      // - auth state now reports authenticated
       return result == true && mounted && auth.isAuthenticated;
     } finally {
       if (mounted) {
@@ -61,27 +57,21 @@ class _UploadPageContentState extends State<UploadPageContent> {
   void initState() {
     super.initState();
 
-    // Use addPostFrameCallback to safely access providers after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      // Listen for video selection to initialize player
       context.read<UploadController>().addListener(_onUploadStateChanged);
-
-      // Register navigation guard for bottom nav
       registerUploadPageGuard(() => _handleNavigationAttempt(context));
     });
   }
 
   @override
   void dispose() {
-    // Safely remove listener
     try {
       context.read<UploadController>().removeListener(_onUploadStateChanged);
     } catch (e) {
       // Controller may already be disposed
     }
-    // Unregister navigation guard
     registerUploadPageGuard(null);
     super.dispose();
   }
@@ -92,20 +82,15 @@ class _UploadPageContentState extends State<UploadPageContent> {
     final controller = context.read<UploadController>();
     final state = controller.state;
 
-    // Initialize video player when video is selected
     if (state.hasVideo) {
       final playerManager = context.read<VideoPlayerManager>();
 
-      // Only initialize if not already initialized
       if (!playerManager.isInitialized) {
         final videoPath = state.video!.path;
-        playerManager.initialize(videoPath, isWeb: false).catchError((e) {
+        playerManager.initialize(videoPath, isWeb: kIsWeb).catchError((e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Could not load video preview: $e'),
-                backgroundColor: AppDesignSystem.errorRed,
-              ),
+              SnackBar(content: Text('Could not load video preview: $e')),
             );
           }
           return null;
@@ -123,16 +108,13 @@ class _UploadPageContentState extends State<UploadPageContent> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
-        // If we reach here, canPop was false, meaning there's unsaved work
         final confirmed = await _handleNavigationAttempt(context);
         if (confirmed && context.mounted) {
-          // Clear the work and pop
           controller.clearVideo();
           Navigator.of(context).pop();
         }
       },
       child: Scaffold(
-        backgroundColor: AppDesignSystem.backgroundLight,
         appBar: AppBar(title: const Text('Upload Video'), centerTitle: true),
         body: Consumer<UploadController>(
           builder: (context, controller, _) {
@@ -144,33 +126,27 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Video selection section
                     if (!state.hasVideo)
-                      _buildVideoSelectionSection(controller),
+                      _buildVideoSelectionSection(context, controller),
 
-                    // Video preview section
-                    if (state.hasVideo) _buildVideoPreviewSection(state),
+                    if (state.hasVideo) _buildVideoPreviewSection(context, state),
 
                     const SizedBox(height: AppDesignSystem.spacingLg),
 
-                    // Timestamp management section (only show when video is loaded)
                     if (state.hasVideo) ...[
-                      _buildTimestampSection(controller, state),
+                      _buildTimestampSection(context, controller, state),
                       const SizedBox(height: AppDesignSystem.spacingLg),
                     ],
 
-                    // Dance style dropdown
-                    _buildDanceStyleDropdown(controller, state),
+                    _buildDanceStyleDropdown(context, controller, state),
 
                     const SizedBox(height: AppDesignSystem.spacingLg),
 
-                    // Upload button
-                    _buildUploadButton(controller, state),
+                    _buildUploadButton(context, controller, state),
 
-                    // Error message
                     if (state.errorMessage != null) ...[
                       const SizedBox(height: AppDesignSystem.spacingMd),
-                      _buildErrorMessage(state.errorMessage!),
+                      _buildErrorMessage(context, state.errorMessage!),
                     ],
                   ],
                 ),
@@ -182,35 +158,37 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  Widget _buildVideoSelectionSection(UploadController controller) {
+  Widget _buildVideoSelectionSection(
+    BuildContext context,
+    UploadController controller,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundMedium,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-        border: Border.all(color: AppDesignSystem.dividerLight, width: 2),
+        border: Border.all(color: colorScheme.outline, width: 2),
       ),
       child: Column(
         children: [
           Icon(
             Icons.video_library_outlined,
             size: 64,
-            color: AppDesignSystem.mainAccent,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: AppDesignSystem.spacingMd),
           Text(
             'Select a Video',
-            style: TextStyle(
-              color: AppDesignSystem.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: textTheme.titleLarge,
           ),
           const SizedBox(height: AppDesignSystem.spacingSm),
           Text(
             'Choose a dance practice video to analyze',
-            style: AppDesignSystem.feedbackStyle.copyWith(
-              color: AppDesignSystem.textSecondary,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -261,14 +239,17 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  Widget _buildVideoPreviewSection(UploadState state) {
+  Widget _buildVideoPreviewSection(BuildContext context, UploadState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Consumer<VideoPlayerManager>(
       builder: (context, playerManager, _) {
         if (!playerManager.isInitialized) {
           return Container(
             height: 200,
             decoration: BoxDecoration(
-              color: AppDesignSystem.backgroundMedium,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
             ),
             child: const Center(child: CircularProgressIndicator()),
@@ -288,7 +269,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
               ),
             ),
             const SizedBox(height: AppDesignSystem.spacingSm),
-            // Video scrubber
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppDesignSystem.spacingMd,
@@ -299,11 +279,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     playerManager.controller!,
                     allowScrubbing: true,
                     colors: VideoProgressColors(
-                      playedColor: AppDesignSystem.mainAccent,
-                      bufferedColor: AppDesignSystem.mainAccent.withValues(
-                        alpha: 0.3,
-                      ),
-                      backgroundColor: AppDesignSystem.dividerLight,
+                      playedColor: colorScheme.primary,
+                      bufferedColor: colorScheme.primary.withValues(alpha: 0.3),
+                      backgroundColor: colorScheme.outline,
                     ),
                   ),
                   const SizedBox(height: AppDesignSystem.spacingXs),
@@ -312,15 +290,11 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     children: [
                       Text(
                         _formatDuration(playerManager.position),
-                        style: AppDesignSystem.smallTextStyle.copyWith(
-                          color: AppDesignSystem.textSecondary,
-                        ),
+                        style: textTheme.bodySmall,
                       ),
                       Text(
                         _formatDuration(playerManager.duration),
-                        style: AppDesignSystem.smallTextStyle.copyWith(
-                          color: AppDesignSystem.textSecondary,
-                        ),
+                        style: textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -334,7 +308,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                 IconButton(
                   icon: Icon(
                     playerManager.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: AppDesignSystem.mainAccent,
+                    color: colorScheme.primary,
                   ),
                   onPressed: playerManager.togglePlayPause,
                 ),
@@ -344,7 +318,8 @@ class _UploadPageContentState extends State<UploadPageContent> {
                   icon: const Icon(Icons.close, size: 18),
                   label: const Text('Clear'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppDesignSystem.backgroundMedium,
+                    backgroundColor: colorScheme.surface,
+                    foregroundColor: colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -356,35 +331,22 @@ class _UploadPageContentState extends State<UploadPageContent> {
   }
 
   Widget _buildDanceStyleDropdown(
+    BuildContext context,
     UploadController controller,
     UploadState state,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return DropdownButtonFormField<DanceStyle>(
       key: ValueKey(state.danceStyle),
       initialValue: state.danceStyle,
       decoration: InputDecoration(
         labelText: 'Dance Style',
         hintText: 'Select the type of dance',
-        prefixIcon: Icon(Icons.music_note, color: AppDesignSystem.mainAccent),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.mainAccent),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: const BorderSide(color: AppDesignSystem.errorRed),
-        ),
+        prefixIcon: Icon(Icons.music_note, color: colorScheme.primary),
       ),
-      dropdownColor: AppDesignSystem.backgroundMedium,
-      style: TextStyle(color: AppDesignSystem.textPrimary),
-      items: DanceStyle.values.map((style) {
+      dropdownColor: colorScheme.surface,
+      items: DanceStyle.$valuesDefined.map((style) {
         return DropdownMenuItem<DanceStyle>(
           value: style,
           child: Text(style.displayName),
@@ -402,7 +364,14 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  Widget _buildUploadButton(UploadController controller, UploadState state) {
+  Widget _buildUploadButton(
+    BuildContext context,
+    UploadController controller,
+    UploadState state,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     final isUploading =
         state.status == UploadStatus.uploadingToStorage ||
         state.status == UploadStatus.submittingJob;
@@ -410,26 +379,9 @@ class _UploadPageContentState extends State<UploadPageContent> {
     if (!isUploading) {
       return ElevatedButton(
         onPressed: state.canUpload ? () => controller.upload() : null,
-        style:
-            ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingMd,
-              ),
-              backgroundColor: AppDesignSystem.mainAccent,
-              foregroundColor: AppDesignSystem.textPrimary,
-              disabledBackgroundColor: AppDesignSystem.backgroundMedium,
-              disabledForegroundColor: AppDesignSystem.textDisabled,
-            ).copyWith(
-              backgroundColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.disabled)) {
-                  return AppDesignSystem.backgroundMedium;
-                }
-                if (states.contains(WidgetState.hovered)) {
-                  return AppDesignSystem.mainAccentHover;
-                }
-                return AppDesignSystem.mainAccent;
-              }),
-            ),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: AppDesignSystem.spacingMd),
+        ),
         child: const Text(
           'Upload Video',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -446,17 +398,12 @@ class _UploadPageContentState extends State<UploadPageContent> {
         height: 52,
         child: Stack(
           children: [
-            // Background track
-            const Positioned.fill(
-              child: ColoredBox(color: AppDesignSystem.backgroundMedium),
-            ),
-            // Progress fill
+            Positioned.fill(child: ColoredBox(color: colorScheme.surface)),
             FractionallySizedBox(
               widthFactor: progress,
               heightFactor: 1.0,
-              child: const ColoredBox(color: AppDesignSystem.mainAccent),
+              child: ColoredBox(color: colorScheme.primary),
             ),
-            // Label
             Center(
               child: Text(
                 state.status == UploadStatus.submittingJob
@@ -464,11 +411,7 @@ class _UploadPageContentState extends State<UploadPageContent> {
                     : progress >= 1.0
                     ? 'Processing…'
                     : 'Uploading… ${(progress * 100).toInt()}%',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppDesignSystem.textPrimary,
-                ),
+                style: textTheme.labelLarge?.copyWith(fontSize: 16),
               ),
             ),
           ],
@@ -477,24 +420,25 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  Widget _buildErrorMessage(String message) {
+  Widget _buildErrorMessage(BuildContext context, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
       decoration: BoxDecoration(
-        color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
+        color: colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        border: Border.all(color: AppDesignSystem.errorRed),
+        border: Border.all(color: colorScheme.error),
       ),
       child: Row(
         children: [
-          Icon(Icons.error, color: AppDesignSystem.errorRed),
+          Icon(Icons.error, color: colorScheme.error),
           const SizedBox(width: AppDesignSystem.spacingSm),
           Expanded(
             child: Text(
               message,
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.errorRed,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
             ),
           ),
         ],
@@ -502,16 +446,13 @@ class _UploadPageContentState extends State<UploadPageContent> {
     );
   }
 
-  /// Handle navigation attempt with confirmation if there's unsaved work
   Future<bool> _handleNavigationAttempt(BuildContext context) async {
     final controller = context.read<UploadController>();
 
-    // Check if there's unsaved work (video selected with timestamps)
     if (!controller.hasUnsavedWork) {
-      return true; // Allow navigation
+      return true;
     }
 
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => DiscardConfirmationDialog(
@@ -522,39 +463,40 @@ class _UploadPageContentState extends State<UploadPageContent> {
     return confirmed == true;
   }
 
-  /// Handle clearing video with confirmation if timestamps exist
   Future<void> _handleClearVideo(BuildContext context) async {
     final controller = context.read<UploadController>();
     final state = controller.state;
 
-    // If there are timestamps, show confirmation dialog
     if (state.timestamps.isNotEmpty) {
+      final colorScheme = Theme.of(context).colorScheme;
+      final textTheme = Theme.of(context).textTheme;
+
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppDesignSystem.backgroundMedium,
-          title: Text(
-            'Clear Video?',
-            style: TextStyle(color: AppDesignSystem.textPrimary),
-          ),
+          title: const Text('Clear Video?'),
           content: Text(
             'You have ${state.timestamps.length} timestamp${state.timestamps.length == 1 ? '' : 's'}. '
             'Clearing the video will remove all timestamps. This cannot be undone.',
-            style: TextStyle(color: AppDesignSystem.textSecondary),
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppDesignSystem.textSecondary),
+                style: textTheme.labelLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(
                 'Clear',
-                style: TextStyle(color: AppDesignSystem.errorRed),
+                style: TextStyle(color: colorScheme.error),
               ),
             ),
           ],
@@ -567,7 +509,6 @@ class _UploadPageContentState extends State<UploadPageContent> {
     controller.clearVideo();
   }
 
-  /// Format duration as MM:SS
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds.remainder(60);
@@ -575,15 +516,18 @@ class _UploadPageContentState extends State<UploadPageContent> {
   }
 
   Widget _buildTimestampSection(
+    BuildContext context,
     UploadController controller,
     UploadState state,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Consumer<VideoPlayerManager>(
       builder: (context, playerManager, _) {
         return Container(
           height: 300,
           decoration: BoxDecoration(
-            color: AppDesignSystem.backgroundMedium,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
           ),
           child: TimestampManager(

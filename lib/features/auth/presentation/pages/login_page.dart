@@ -77,10 +77,8 @@ class _LoginPageState extends State<LoginPage> {
 
       final redirectPath = widget.initialRedirectPath;
       if (redirectPath != null && redirectPath.isNotEmpty) {
-        // Router-level guard flow: send user back to originally requested route.
         context.go(redirectPath);
       } else {
-        // Local flow (e.g. upload picker gating): pop with success flag.
         context.pop(true);
       }
     } on AuthException catch (e) {
@@ -113,7 +111,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: const Text('Sign in'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -133,36 +130,33 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildHeader(),
+        _buildHeader(context),
         const SizedBox(height: AppDesignSystem.spacingXl),
         _buildFormCard(context),
       ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       children: [
-        Icon(Icons.lock_outline, size: 64, color: AppDesignSystem.mainAccent),
+        Icon(Icons.lock_outline, size: 64, color: colorScheme.primary),
         const SizedBox(height: AppDesignSystem.spacingMd),
         Text(
           _isRegisterMode ? 'Create your account' : 'Welcome back',
-          style: TextStyle(
-            color: AppDesignSystem.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: textTheme.headlineMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppDesignSystem.spacingSm),
         Text(
           _isRegisterMode
-              ? 'Sign up to upload videos, view your history,\n'
-                    'and manage your profile.'
-              : 'Sign in to upload videos, view your history,\n'
-                    'and manage your profile.',
-          style: AppDesignSystem.feedbackStyle.copyWith(
-            color: AppDesignSystem.textSecondary,
+              ? 'Sign up to upload videos and manage your routines.'
+              : 'Sign in to upload videos and manage your routines.',
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
@@ -171,32 +165,35 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildFormCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       padding: const EdgeInsets.all(AppDesignSystem.spacingLg),
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundMedium,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-        border: Border.all(color: AppDesignSystem.dividerLight),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            _buildEmailField(),
+            _buildEmailField(context),
             const SizedBox(height: AppDesignSystem.spacingMd),
             if (_isRegisterMode) ...[
-              _buildUsernameField(),
+              _buildUsernameField(context),
               const SizedBox(height: AppDesignSystem.spacingMd),
             ],
-            _buildPasswordField(),
+            _buildPasswordField(context),
             if (_errorText != null) ...[
               const SizedBox(height: AppDesignSystem.spacingSm),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _errorText!,
-                  style: AppDesignSystem.feedbackStyle.copyWith(
-                    color: AppDesignSystem.errorRed,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.error,
                   ),
                 ),
               ),
@@ -204,44 +201,28 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: AppDesignSystem.spacingLg),
             _buildButtons(context),
             const SizedBox(height: AppDesignSystem.spacingSm),
-            _buildToggleAuthMode(),
+            _buildToggleAuthMode(context),
             const SizedBox(height: AppDesignSystem.spacingMd),
-            _buildFutureOauthHint(),
+            _buildFutureOauthHint(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmailField() {
+  Widget _buildEmailField(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return TextFormField(
       controller: _emailController,
       enabled: !_isSubmitting,
       keyboardType: TextInputType.emailAddress,
-      style: TextStyle(color: AppDesignSystem.textPrimary),
       decoration: InputDecoration(
         labelText: 'Email',
         hintText: 'you@example.com',
-        labelStyle: TextStyle(color: AppDesignSystem.textSecondary),
-        hintStyle: TextStyle(
-          color: AppDesignSystem.textSecondary.withValues(alpha: 0.7),
-        ),
         prefixIcon: Icon(
           Icons.email_outlined,
-          color: AppDesignSystem.textSecondary,
-        ),
-        filled: true,
-        fillColor: AppDesignSystem.backgroundMedium,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
       validator: (value) {
@@ -258,18 +239,18 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return TextFormField(
       controller: _passwordController,
       enabled: !_isSubmitting,
       obscureText: _obscurePassword,
-      style: TextStyle(color: AppDesignSystem.textPrimary),
       decoration: InputDecoration(
         labelText: 'Password',
-        labelStyle: TextStyle(color: AppDesignSystem.textSecondary),
         prefixIcon: Icon(
           Icons.lock_outline,
-          color: AppDesignSystem.textSecondary,
+          color: colorScheme.onSurfaceVariant,
         ),
         suffixIcon: IconButton(
           onPressed: () {
@@ -279,21 +260,8 @@ class _LoginPageState extends State<LoginPage> {
           },
           icon: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
-            color: AppDesignSystem.textSecondary,
+            color: colorScheme.onSurfaceVariant,
           ),
-        ),
-        filled: true,
-        fillColor: AppDesignSystem.backgroundMedium,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
         ),
       ),
       validator: (value) {
@@ -308,79 +276,18 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: _isSubmitting ? null : _onCancel,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppDesignSystem.textSecondary,
-              side: BorderSide(color: AppDesignSystem.dividerLight),
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingSm,
-              ),
-            ),
-            child: const Text('Cancel'),
-          ),
-        ),
-        const SizedBox(width: AppDesignSystem.spacingMd),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _onSubmit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.mainAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDesignSystem.spacingSm,
-              ),
-            ),
-            child: _isSubmitting
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppDesignSystem.textPrimary,
-                      ),
-                    ),
-                  )
-                : Text(_isRegisterMode ? 'Create account' : 'Sign in'),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildUsernameField(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-  Widget _buildUsernameField() {
     return TextFormField(
       controller: _usernameController,
       enabled: !_isSubmitting,
-      style: TextStyle(color: AppDesignSystem.textPrimary),
       decoration: InputDecoration(
         labelText: 'Username',
         hintText: 'your_name',
-        labelStyle: TextStyle(color: AppDesignSystem.textSecondary),
-        hintStyle: TextStyle(
-          color: AppDesignSystem.textSecondary.withValues(alpha: 0.7),
-        ),
         prefixIcon: Icon(
           Icons.person_outline,
-          color: AppDesignSystem.textSecondary,
-        ),
-        filled: true,
-        fillColor: AppDesignSystem.backgroundMedium,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.dividerLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-          borderSide: BorderSide(color: AppDesignSystem.mainAccent),
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
       validator: (value) {
@@ -396,7 +303,50 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildToggleAuthMode() {
+  Widget _buildButtons(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _isSubmitting ? null : _onCancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colorScheme.onSurfaceVariant,
+              side: BorderSide(color: colorScheme.outline),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppDesignSystem.spacingSm,
+              ),
+            ),
+            child: const Text('Cancel'),
+          ),
+        ),
+        const SizedBox(width: AppDesignSystem.spacingMd),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isSubmitting ? null : _onSubmit,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                vertical: AppDesignSystem.spacingSm,
+              ),
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(_isRegisterMode ? 'Create account' : 'Sign in'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleAuthMode(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     final primaryText = _isRegisterMode
         ? 'Already have an account?'
         : 'New here?';
@@ -409,9 +359,7 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Text(
           primaryText,
-          style: AppDesignSystem.smallTextStyle.copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          style: textTheme.bodySmall,
         ),
         const SizedBox(width: AppDesignSystem.spacingXs),
         GestureDetector(
@@ -425,8 +373,8 @@ class _LoginPageState extends State<LoginPage> {
                 },
           child: Text(
             actionText,
-            style: AppDesignSystem.smallTextStyle.copyWith(
-              color: AppDesignSystem.mainAccent,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -435,17 +383,17 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildFutureOauthHint() {
+  Widget _buildFutureOauthHint(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       children: [
-        Divider(color: AppDesignSystem.dividerLight),
+        const Divider(),
         const SizedBox(height: AppDesignSystem.spacingSm),
         Text(
-          'In future versions you’ll be able to sign in or register with\n'
+          "In future versions you'll be able to sign in or register with\n"
           'Apple or Google for a faster experience.',
-          style: AppDesignSystem.smallTextStyle.copyWith(
-            color: AppDesignSystem.textSecondary,
-          ),
+          style: textTheme.bodySmall,
           textAlign: TextAlign.center,
         ),
       ],

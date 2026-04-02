@@ -1,4 +1,4 @@
-import 'package:dance_analysis_client/models/video_metadata.dart';
+import 'package:dance_analysis_client/features/upload/domain/models/video_metadata.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

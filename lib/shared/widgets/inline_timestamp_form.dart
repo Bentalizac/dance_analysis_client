@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../models/video_timestamp.dart';
+import '../models/video_timestamp.dart';
 import '../design_system/theme.dart';
 
 /// Inline form for adding or editing video timestamps with start/end times
@@ -49,27 +49,22 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
   void initState() {
     super.initState();
 
-    // Initialize label
     _labelController = TextEditingController(
       text: widget.existingTimestamp?.label ?? '',
     );
 
-    // Initialize times
     if (widget.existingTimestamp != null) {
       _startTime = widget.existingTimestamp!.startTime;
       _endTime = widget.existingTimestamp!.endTime;
     } else {
-      // For new timestamps, start at current position, end 5 seconds later
       _startTime = widget.currentVideoPosition;
       _endTime = widget.currentVideoPosition + const Duration(seconds: 5);
 
-      // Ensure end time doesn't exceed video duration
       if (widget.maxDuration != null && _endTime > widget.maxDuration!) {
         _endTime = widget.maxDuration!;
       }
     }
 
-    // Initialize time input controllers
     _startMinutesController = TextEditingController(
       text: _startTime.inMinutes.toString(),
     );
@@ -83,7 +78,6 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
       text: (_endTime.inSeconds % 60).toString().padLeft(2, '0'),
     );
 
-    // Add listeners to update Duration when text changes
     _startMinutesController.addListener(_updateStartTimeFromInputs);
     _startSecondsController.addListener(_updateStartTimeFromInputs);
     _endMinutesController.addListener(_updateEndTimeFromInputs);
@@ -143,9 +137,8 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
     setState(() {
       _startTime = currentPos;
       _startMinutesController.text = currentPos.inMinutes.toString();
-      _startSecondsController.text = (currentPos.inSeconds % 60)
-          .toString()
-          .padLeft(2, '0');
+      _startSecondsController.text =
+          (currentPos.inSeconds % 60).toString().padLeft(2, '0');
       _validateTimes();
     });
   }
@@ -155,15 +148,17 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
     setState(() {
       _endTime = currentPos;
       _endMinutesController.text = currentPos.inMinutes.toString();
-      _endSecondsController.text = (currentPos.inSeconds % 60)
-          .toString()
-          .padLeft(2, '0');
+      _endSecondsController.text =
+          (currentPos.inSeconds % 60).toString().padLeft(2, '0');
       _validateTimes();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppDesignSystem.spacingMd,
@@ -171,10 +166,10 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
       ),
       padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundMedium,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
         border: Border.all(
-          color: AppDesignSystem.mainAccent.withValues(alpha: 0.3),
+          color: colorScheme.primary.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -189,7 +184,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 widget.existingTimestamp == null
                     ? Icons.add_circle_outline
                     : Icons.edit_outlined,
-                color: AppDesignSystem.mainAccent,
+                color: colorScheme.primary,
                 size: 20,
               ),
               const SizedBox(width: AppDesignSystem.spacingSm),
@@ -197,16 +192,13 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 widget.existingTimestamp == null
                     ? 'Add Timestamp'
                     : 'Edit Timestamp',
-                style: AppDesignSystem.tabStyle.copyWith(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 16,
-                ),
+                style: textTheme.labelLarge?.copyWith(fontSize: 16),
               ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: widget.onCancel,
-                color: AppDesignSystem.textSecondary,
+                color: colorScheme.onSurfaceVariant,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
@@ -219,6 +211,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
             children: [
               Expanded(
                 child: _buildTimeInput(
+                  context,
                   label: 'Start Time',
                   minutesController: _startMinutesController,
                   secondsController: _startSecondsController,
@@ -228,6 +221,7 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
               const SizedBox(width: AppDesignSystem.spacingMd),
               Expanded(
                 child: _buildTimeInput(
+                  context,
                   label: 'End Time',
                   minutesController: _endMinutesController,
                   secondsController: _endSecondsController,
@@ -243,25 +237,25 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingSm),
               decoration: BoxDecoration(
-                color: AppDesignSystem.errorRed.withValues(alpha: 0.1),
+                color: colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
                 border: Border.all(
-                  color: AppDesignSystem.errorRed.withValues(alpha: 0.3),
+                  color: colorScheme.error.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
-                    color: AppDesignSystem.errorRed,
+                    color: colorScheme.error,
                     size: 16,
                   ),
                   const SizedBox(width: AppDesignSystem.spacingSm),
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: AppDesignSystem.smallTextStyle.copyWith(
-                        color: AppDesignSystem.errorRed,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.error,
                       ),
                     ),
                   ),
@@ -274,30 +268,16 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
           // Step name input
           Text(
             'Dance Step Name',
-            style: AppDesignSystem.smallTextStyle.copyWith(
-              color: AppDesignSystem.textSecondary,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppDesignSystem.spacingXs),
           TextField(
             controller: _labelController,
             autofocus: widget.existingTimestamp == null,
-            style: const TextStyle(color: AppDesignSystem.textPrimary),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'e.g., Pirouette, Grand Jeté',
-              hintStyle: TextStyle(
-                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
-              ),
-              filled: true,
-              fillColor: AppDesignSystem.backgroundMedium,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppDesignSystem.spacingMd,
-                vertical: AppDesignSystem.spacingMd,
-              ),
             ),
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _handleSave(),
@@ -312,31 +292,16 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 onPressed: widget.onCancel,
                 child: Text(
                   'Cancel',
-                  style: AppDesignSystem.tabStyle.copyWith(
-                    color: AppDesignSystem.textSecondary,
+                  style: textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
               const SizedBox(width: AppDesignSystem.spacingSm),
               ElevatedButton(
                 onPressed: _isValid ? _handleSave : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppDesignSystem.mainAccent,
-                  foregroundColor: AppDesignSystem.textOnDark,
-                  disabledBackgroundColor: AppDesignSystem.textDisabled,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDesignSystem.radiusXs,
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.spacingLg,
-                    vertical: AppDesignSystem.spacingMd,
-                  ),
-                ),
                 child: Text(
                   widget.existingTimestamp == null ? 'Add' : 'Save',
-                  style: AppDesignSystem.tabStyle,
                 ),
               ),
             ],
@@ -346,26 +311,29 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
     );
   }
 
-  Widget _buildTimeInput({
+  Widget _buildTimeInput(
+    BuildContext context, {
     required String label,
     required TextEditingController minutesController,
     required TextEditingController secondsController,
     required VoidCallback onSetToCurrent,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: AppDesignSystem.smallTextStyle.copyWith(
-            color: AppDesignSystem.textSecondary,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppDesignSystem.spacingXs),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Minutes input
             SizedBox(
               width: 50,
               child: TextField(
@@ -373,39 +341,13 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 14,
-                ),
-                decoration: InputDecoration(
-                  hintText: '0',
-                  hintStyle: TextStyle(
-                    color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
-                  ),
-                  filled: true,
-                  fillColor: AppDesignSystem.backgroundMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDesignSystem.radiusXs,
-                    ),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.spacingXs,
-                    vertical: AppDesignSystem.spacingSm,
-                  ),
-                ),
+                style: textTheme.bodyMedium,
+                decoration: const InputDecoration(hintText: '0'),
               ),
             ),
             const SizedBox(width: AppDesignSystem.spacingXs),
-            Text(
-              ':',
-              style: AppDesignSystem.timestampStyle.copyWith(
-                color: AppDesignSystem.textPrimary,
-              ),
-            ),
+            Text(':', style: textTheme.titleMedium),
             const SizedBox(width: AppDesignSystem.spacingXs),
-            // Seconds input
             SizedBox(
               width: 50,
               child: TextField(
@@ -416,38 +358,16 @@ class _InlineTimestampFormState extends State<InlineTimestampForm> {
                   _MaxValueInputFormatter(59),
                 ],
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 14,
-                ),
-                decoration: InputDecoration(
-                  hintText: '00',
-                  hintStyle: TextStyle(
-                    color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
-                  ),
-                  filled: true,
-                  fillColor: AppDesignSystem.backgroundMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDesignSystem.radiusXs,
-                    ),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppDesignSystem.spacingXs,
-                    vertical: AppDesignSystem.spacingSm,
-                  ),
-                ),
+                style: textTheme.bodyMedium,
+                decoration: const InputDecoration(hintText: '00'),
               ),
             ),
             const SizedBox(width: AppDesignSystem.spacingSm),
-            // Use Current button
             TextButton.icon(
               onPressed: onSetToCurrent,
               icon: const Icon(Icons.access_time, size: 14),
               label: const Text('Now'),
               style: TextButton.styleFrom(
-                foregroundColor: AppDesignSystem.mainAccent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDesignSystem.spacingSm,
                   vertical: AppDesignSystem.spacingXs,

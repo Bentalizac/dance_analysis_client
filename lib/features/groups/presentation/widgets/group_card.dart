@@ -12,27 +12,30 @@ class GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
       child: Container(
         padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
         decoration: BoxDecoration(
-          color: AppDesignSystem.backgroundMedium,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-          border: Border.all(color: AppDesignSystem.dividerLight, width: 1),
+          border: Border.all(color: colorScheme.outline, width: 1),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
               decoration: BoxDecoration(
-                color: AppDesignSystem.backgroundMedium,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
               ),
               child: Icon(
                 Icons.group,
-                color: AppDesignSystem.mainAccent,
+                color: colorScheme.primary,
                 size: 32,
               ),
             ),
@@ -43,8 +46,7 @@ class GroupCard extends StatelessWidget {
                 children: [
                   Text(
                     group.name,
-                    style: AppDesignSystem.timestampStyle.copyWith(
-                      color: AppDesignSystem.textPrimary,
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -53,8 +55,8 @@ class GroupCard extends StatelessWidget {
                     const SizedBox(height: AppDesignSystem.spacingXs),
                     Text(
                       group.description!,
-                      style: AppDesignSystem.feedbackStyle.copyWith(
-                        color: AppDesignSystem.textSecondary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -65,7 +67,7 @@ class GroupCard extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: AppDesignSystem.textSecondary,
+              color: colorScheme.onSurfaceVariant,
               size: 16,
             ),
           ],

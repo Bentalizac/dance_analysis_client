@@ -39,8 +39,7 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
     });
 
     final desc = _descController.text.trim();
-    final success =
-        await widget.onSubmit(name, desc.isEmpty ? null : desc);
+    final success = await widget.onSubmit(name, desc.isEmpty ? null : desc);
 
     if (!mounted) return;
 
@@ -56,10 +55,11 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return AlertDialog(
-      backgroundColor: AppDesignSystem.backgroundMedium,
-      title: Text('Create Group',
-          style: TextStyle(color: AppDesignSystem.textPrimary)),
+      title: const Text('Create Group'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -85,17 +85,22 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
           ),
           if (_error != null) ...[
             const SizedBox(height: AppDesignSystem.spacingSm),
-            Text(_error!,
-                style: AppDesignSystem.smallTextStyle
-                    .copyWith(color: AppDesignSystem.errorRed)),
+            Text(
+              _error!,
+              style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+            ),
           ],
         ],
       ),
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: Text('Cancel',
-              style: TextStyle(color: AppDesignSystem.textSecondary)),
+          child: Text(
+            'Cancel',
+            style: textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
         ElevatedButton(
           onPressed: _isSubmitting ? null : _submit,
@@ -103,7 +108,8 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Create'),
         ),
       ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/video_timestamp.dart';
+import '../models/video_timestamp.dart';
 import '../design_system/theme.dart';
 
 /// A single timestamp item in the list showing time and dance step label
@@ -30,6 +30,9 @@ class TimestampListItem extends StatelessWidget {
       return editForm!;
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignSystem.spacingXs,
@@ -46,13 +49,12 @@ class TimestampListItem extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Time indicator icon
-                  const SizedBox(
+                  SizedBox(
                     width: 15,
                     child: Icon(
                       Icons.bookmark,
                       size: 16,
-                      color: AppDesignSystem.mainAccent,
+                      color: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -60,9 +62,7 @@ class TimestampListItem extends StatelessWidget {
                   // Time range (start - end)
                   Text(
                     timestamp.formattedTimeRange,
-                    style: AppDesignSystem.timestampStyle.copyWith(
-                      color: AppDesignSystem.textPrimary,
-                    ),
+                    style: textTheme.titleMedium,
                   ),
                   const SizedBox(width: AppDesignSystem.spacingMd),
 
@@ -70,8 +70,8 @@ class TimestampListItem extends StatelessWidget {
                   Expanded(
                     child: Text(
                       timestamp.label,
-                      style: AppDesignSystem.feedbackStyle.copyWith(
-                        color: AppDesignSystem.textSecondary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -85,7 +85,7 @@ class TimestampListItem extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 18),
                           onPressed: onEdit,
-                          color: AppDesignSystem.textSecondary,
+                          color: colorScheme.onSurfaceVariant,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
                             minWidth: 32,
@@ -96,7 +96,7 @@ class TimestampListItem extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.delete_outline, size: 18),
                           onPressed: onDelete,
-                          color: AppDesignSystem.errorRed,
+                          color: colorScheme.error,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
                             minWidth: 32,
@@ -113,7 +113,7 @@ class TimestampListItem extends StatelessWidget {
           // Divider
           Container(
             height: 1,
-            decoration: BoxDecoration(color: AppDesignSystem.dividerLight),
+            color: colorScheme.outline,
           ),
         ],
       ),

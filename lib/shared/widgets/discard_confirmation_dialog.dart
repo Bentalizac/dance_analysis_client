@@ -15,44 +15,34 @@ class DiscardConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return AlertDialog(
-      backgroundColor: AppDesignSystem.backgroundMedium,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-      ),
-      title: const Text(
-        'Discard Changes?',
-        style: TextStyle(
-          color: AppDesignSystem.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      title: const Text('Discard Changes?'),
       content: Text(
         timestampCount > 0
             ? 'You have $timestampCount timestamp${timestampCount == 1 ? '' : 's'} that will be lost. Are you sure you want to discard your progress?'
             : 'Are you sure you want to discard your changes?',
-        style: AppDesignSystem.feedbackStyle.copyWith(
-          color: AppDesignSystem.textSecondary,
+        style: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
           height: 1.5,
         ),
       ),
       actions: [
-        // Cancel button
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
           child: Text(
             'Cancel',
-            style: AppDesignSystem.tabStyle.copyWith(
-              color: AppDesignSystem.textSecondary,
+            style: textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),
-        // Discard button
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: TextButton.styleFrom(
-            backgroundColor: AppDesignSystem.errorRed.withValues(alpha: 0.1),
+            backgroundColor: colorScheme.errorContainer,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
             ),
@@ -63,8 +53,8 @@ class DiscardConfirmationDialog extends StatelessWidget {
             ),
             child: Text(
               'Discard',
-              style: AppDesignSystem.tabStyle.copyWith(
-                color: AppDesignSystem.errorRed,
+              style: textTheme.labelLarge?.copyWith(
+                color: colorScheme.error,
               ),
             ),
           ),

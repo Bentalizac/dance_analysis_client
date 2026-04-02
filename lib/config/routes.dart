@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,9 +7,9 @@ import '../features/group_invites/presentation/pages/accept_invite_page.dart';
 import '../features/groups/presentation/pages/group_detail_page.dart';
 import '../features/groups/presentation/pages/groups_list_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
-import '../features/results/presentation/pages/demo_results_page.dart';
-import '../features/routine_sessions/presentation/pages/session_detail_page.dart';
-import '../features/routine_sessions/presentation/pages/session_upload_page.dart';
+import '../features/routine_instances/presentation/pages/instance_detail_page.dart';
+import '../features/routine_instances/presentation/pages/instance_upload_page.dart';
+import '../features/routine_videos/presentation/pages/video_detail_page.dart';
 import '../features/routines/presentation/pages/routine_detail_page.dart';
 import '../features/routines/presentation/pages/routines_list_page.dart';
 import '../shared/design_system/theme.dart';
@@ -50,8 +51,9 @@ final GoRouter appRouter = GoRouter(
     final isProtected =
         goingTo == '/profile' ||
         goingTo.startsWith('/routines') ||
-        goingTo.startsWith('/sessions') ||
-        goingTo.startsWith('/groups');
+        goingTo.startsWith('/instances') ||
+        goingTo.startsWith('/groups') ||
+        goingTo.startsWith('/accept-invite');
 
     if (!isLoggedIn && isProtected) {
       final from = Uri.encodeComponent(state.uri.toString());
@@ -76,12 +78,6 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) =>
           AcceptInvitePage(token: state.pathParameters['token']!),
     ),
-    GoRoute(
-      path: '/demo',
-      name: 'demo',
-      builder: (context, state) => const DemoResultsPage(),
-    ),
-
     // Main scaffold with persistent bottom navigation
     ShellRoute(
       builder: (context, state, child) => _MainScaffold(child: child),
@@ -143,25 +139,35 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
 
-    // Session routes (full-screen, outside shell)
+    // Instance routes (full-screen, outside shell)
     GoRoute(
-      path: '/sessions/:sessionId',
-      name: 'sessionDetail',
+      path: '/instances/:instanceId',
+      name: 'instanceDetail',
       builder: (context, state) =>
-          SessionDetailPage(sessionId: state.pathParameters['sessionId']!),
+          InstanceDetailPage(instanceId: state.pathParameters['instanceId']!),
       routes: [
         GoRoute(
           path: 'upload',
-          name: 'sessionUpload',
+          name: 'instanceUpload',
           builder: (context, state) =>
-              SessionUploadPage(sessionId: state.pathParameters['sessionId']!),
+              InstanceUploadPage(instanceId: state.pathParameters['instanceId']!),
+        ),
+        GoRoute(
+          path: 'videos/:videoId',
+          name: 'videoDetail',
+          builder: (context, state) => VideoDetailPage(
+            instanceId: state.pathParameters['instanceId']!,
+            videoId: state.pathParameters['videoId']!,
+          ),
         ),
       ],
     ),
   ],
 );
 
-/// Main scaffold with bottom navigation.
+/// Main scaffold with platform-appropriate navigation.
+///
+/// On web a top [AppBar] is used; on native the standard bottom nav bar.
 class _MainScaffold extends StatelessWidget {
   const _MainScaffold({required this.child});
 
@@ -169,10 +175,42 @@ class _MainScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: _buildWebTopNav(context),
+        body: child,
+      );
+    }
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       body: child,
       bottomNavigationBar: _buildBottomNavigationBar(context),
+    );
+  }
+
+  PreferredSizeWidget _buildWebTopNav(BuildContext context) {
+    final currentIndex = _getIndexFromPath(GoRouterState.of(context).uri.path);
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return AppBar(
+      automaticallyImplyLeading: false,
+      title: Text(
+        'DanceNote',
+        style: textTheme.titleLarge?.copyWith(color: colorScheme.primary),
+      ),
+      actions: [
+        for (int i = 0; i < _kNavItems.length; i++)
+          _WebNavButton(
+            item: _kNavItems[i],
+            isActive: currentIndex == i,
+            onTap: () => _onTabTapped(context, i),
+          ),
+        const SizedBox(width: AppDesignSystem.spacingMd),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Divider(height: 1, thickness: 1, color: colorScheme.outline),
+      ),
     );
   }
 
@@ -180,11 +218,13 @@ class _MainScaffold extends StatelessWidget {
     final currentLocation = GoRouterState.of(context).uri.path;
     final currentIndex = _getIndexFromPath(currentLocation);
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppDesignSystem.backgroundMedium,
+        color: colorScheme.surface,
         border: Border(
-          top: BorderSide(color: AppDesignSystem.dividerLight, width: 1),
+          top: BorderSide(color: colorScheme.outline, width: 1),
         ),
       ),
       child: SafeArea(
@@ -192,9 +232,6 @@ class _MainScaffold extends StatelessWidget {
           currentIndex: currentIndex,
           onTap: (index) => _onTabTapped(context, index),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppDesignSystem.backgroundMedium,
-          selectedItemColor: AppDesignSystem.mainAccent,
-          unselectedItemColor: AppDesignSystem.textSecondary,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
@@ -239,7 +276,7 @@ class _MainScaffold extends StatelessWidget {
     if (index == currentIndex) return;
 
     // Guard: check if leaving session upload with unsaved work
-    if (currentLocation.startsWith('/sessions') &&
+    if (currentLocation.startsWith('/instances') &&
         currentLocation.endsWith('/upload') &&
         _uploadPageCanLeaveCallback != null) {
       final canLeave = await _uploadPageCanLeaveCallback!();
@@ -261,6 +298,91 @@ class _MainScaffold extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Shared nav item data
+// ---------------------------------------------------------------------------
+
+class _NavItem {
+  const _NavItem({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
+
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+}
+
+const _kNavItems = [
+  _NavItem(label: 'Home', icon: Icons.home_outlined, activeIcon: Icons.home),
+  _NavItem(
+    label: 'Routines',
+    icon: Icons.library_music_outlined,
+    activeIcon: Icons.library_music,
+  ),
+  _NavItem(
+    label: 'Groups',
+    icon: Icons.group_outlined,
+    activeIcon: Icons.group,
+  ),
+  _NavItem(
+    label: 'Profile',
+    icon: Icons.person_outline,
+    activeIcon: Icons.person,
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Web-only nav button
+// ---------------------------------------------------------------------------
+
+class _WebNavButton extends StatelessWidget {
+  const _WebNavButton({
+    required this.item,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final _NavItem item;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final color =
+        isActive ? colorScheme.primary : colorScheme.onSurfaceVariant;
+
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(
+        isActive ? item.activeIcon : item.icon,
+        size: 18,
+        color: color,
+      ),
+      label: Text(
+        item.label,
+        style: TextStyle(
+          color: color,
+          fontSize: 14,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+          letterSpacing: -0.08,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignSystem.spacingMd,
+          vertical: AppDesignSystem.spacingSm,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+
 /// Temporary stub page for features not yet implemented.
 class _StubPage extends StatelessWidget {
   const _StubPage({required this.title, required this.icon});
@@ -270,17 +392,19 @@ class _StubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
       appBar: AppBar(title: Text(title), centerTitle: true),
       body: Center(
         child: Container(
           margin: const EdgeInsets.all(AppDesignSystem.spacingXl),
           padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
           decoration: BoxDecoration(
-            color: AppDesignSystem.backgroundMedium,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
-            border: Border.all(color: AppDesignSystem.dividerLight, width: 2),
+            border: Border.all(color: colorScheme.outline, width: 2),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -288,22 +412,15 @@ class _StubPage extends StatelessWidget {
               Icon(
                 Icons.construction,
                 size: 64,
-                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
               const SizedBox(height: AppDesignSystem.spacingMd),
-              Text(
-                '$title Page',
-                style: TextStyle(
-                  color: AppDesignSystem.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('$title Page', style: textTheme.headlineSmall),
               const SizedBox(height: AppDesignSystem.spacingSm),
               Text(
                 'Coming soon',
-                style: AppDesignSystem.feedbackStyle.copyWith(
-                  color: AppDesignSystem.textSecondary,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

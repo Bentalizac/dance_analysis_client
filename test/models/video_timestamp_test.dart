@@ -1,4 +1,4 @@
-import 'package:dance_analysis_client/models/video_timestamp.dart';
+import 'package:dance_analysis_client/shared/models/video_timestamp.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

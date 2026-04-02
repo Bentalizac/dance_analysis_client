@@ -1,5 +1,5 @@
 import 'package:dance_analysis_client/config/routes.dart';
-import 'package:dance_analysis_client/features/upload/domain/repositories/video_repository.dart';
+import 'package:dance_analysis_client/features/upload/data/video_repository.dart';
 import 'package:dance_analysis_client/shared/design_system/theme.dart';
 import 'package:dance_analysis_client/shared/services/video_service.dart';
 import 'package:flutter/material.dart';

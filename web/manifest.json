@@ -1,11 +1,11 @@
 {
-    "name": "learning",
-    "short_name": "learning",
+    "name": "DanceNote",
+    "short_name": "DanceNote",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FAF1EC",
+    "theme_color": "#9060C8",
+    "description": "DanceNote — dance practice and analysis",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../../../models/dance_style.dart';
+import '../../../../generated/api/models/dance_response.dart';
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/dance_style_dropdown.dart';
+import '../../../dances/presentation/controllers/dances_controller.dart';
+import '../../../dances/presentation/controllers/dances_state.dart';
 
 /// Dialog for creating a new routine within a group.
 class CreateRoutineDialog extends StatefulWidget {
@@ -16,9 +20,17 @@ class CreateRoutineDialog extends StatefulWidget {
 
 class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
   final _titleController = TextEditingController();
-  DanceStyle? _selectedStyle;
+  DanceResponse? _selectedDance;
   bool _isSubmitting = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DancesController>().loadDances();
+    });
+  }
 
   @override
   void dispose() {
@@ -32,7 +44,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
       setState(() => _error = 'Routine title is required.');
       return;
     }
-    if (_selectedStyle == null) {
+    if (_selectedDance == null) {
       setState(() => _error = 'Please select a dance style.');
       return;
     }
@@ -42,8 +54,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
       _error = null;
     });
 
-    final success =
-        await widget.onSubmit(title, _selectedStyle!.name);
+    final success = await widget.onSubmit(title, _selectedDance!.id);
 
     if (!mounted) return;
 
@@ -59,46 +70,62 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return AlertDialog(
-      backgroundColor: AppDesignSystem.backgroundMedium,
-      title: Text('Create Routine',
-          style: TextStyle(color: AppDesignSystem.textPrimary)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _titleController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              hintText: 'e.g. Waltz Competition Routine',
-            ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: AppDesignSystem.spacingMd),
-          DropdownButtonFormField<DanceStyle>(
-            initialValue: _selectedStyle,
-            decoration: const InputDecoration(labelText: 'Dance Style'),
-            dropdownColor: AppDesignSystem.backgroundMedium,
-            items: DanceStyle.values
-                .map((s) => DropdownMenuItem(
-                    value: s, child: Text(s.displayName)))
-                .toList(),
-            onChanged: (v) => setState(() => _selectedStyle = v),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppDesignSystem.spacingSm),
-            Text(_error!,
-                style: AppDesignSystem.smallTextStyle
-                    .copyWith(color: AppDesignSystem.errorRed)),
-          ],
-        ],
+      title: const Text('Create Routine'),
+      content: Consumer<DancesController>(
+        builder: (context, dances, _) {
+          final dancesState = dances.state;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'e.g. Waltz Competition Routine',
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: AppDesignSystem.spacingMd),
+              if (dancesState.status == DancesStatus.initial ||
+                  dancesState.status == DancesStatus.loading)
+                const LinearProgressIndicator()
+              else if (dancesState.status == DancesStatus.error)
+                Text(
+                  dancesState.errorMessage ?? 'Failed to load dance styles.',
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                )
+              else
+                DanceStyleDropdown(
+                  dances: dancesState.dances,
+                  value: _selectedDance,
+                  onChanged: (v) => setState(() => _selectedDance = v),
+                ),
+              if (_error != null) ...[
+                const SizedBox(height: AppDesignSystem.spacingSm),
+                Text(
+                  _error!,
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                ),
+              ],
+            ],
+          );
+        },
       ),
       actions: [
         TextButton(
           onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
-          child: Text('Cancel',
-              style: TextStyle(color: AppDesignSystem.textSecondary)),
+          child: Text(
+            'Cancel',
+            style: textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
         ElevatedButton(
           onPressed: _isSubmitting ? null : _submit,
@@ -106,7 +133,8 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Create'),
         ),
       ],

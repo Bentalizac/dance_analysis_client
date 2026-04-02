@@ -11,20 +11,28 @@ class InvitesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.mail_outline,
-                size: 64,
-                color: AppDesignSystem.textSecondary.withValues(alpha: 0.5)),
+            Icon(
+              Icons.mail_outline,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: AppDesignSystem.spacingMd),
-            Text('Invite people using the + button.',
-                style: AppDesignSystem.feedbackStyle
-                    .copyWith(color: AppDesignSystem.textSecondary),
-                textAlign: TextAlign.center),
+            Text(
+              'Invite people using the + button.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

@@ -1,8 +1,8 @@
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../models/dance_style.dart';
-import '../../../../models/video_metadata.dart';
-import '../../../../models/video_timestamp.dart';
+import '../../../../shared/models/video_timestamp.dart';
+import '../../../../generated/api/models/dance_style.dart';
+import '../../domain/models/video_metadata.dart';
 import '../../../../shared/services/video_service.dart';
 
 /// High-level status values exposed to the UI.

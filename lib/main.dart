@@ -1,44 +1,46 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'config/routes.dart';
 import 'features/dancer_slots/data/dancer_slots_data_source.dart';
 import 'features/dancer_slots/presentation/controllers/dancer_slots_controller.dart';
+import 'features/dances/data/dances_data_source.dart';
+import 'features/dances/presentation/controllers/dances_controller.dart';
 import 'features/group_invites/data/group_invites_data_source.dart';
 import 'features/groups/data/groups_data_source.dart';
 import 'features/groups/presentation/controllers/groups_controller.dart';
-import 'features/history/data/history_local_data_source.dart';
-import 'features/history/data/history_repository.dart';
 import 'features/routine_notes/data/notes_data_source.dart';
-import 'features/routine_sessions/data/routine_sessions_data_source.dart';
-import 'features/routine_sessions/presentation/controllers/routine_sessions_controller.dart';
+import 'features/routine_instances/data/routine_instances_data_source.dart';
+import 'features/routine_instances/presentation/controllers/routine_instances_controller.dart';
 import 'features/routine_videos/data/videos_data_source.dart';
 import 'features/routines/data/routines_data_source.dart';
 import 'features/routines/presentation/controllers/routines_controller.dart';
 import 'features/slot_assignments/data/slot_assignments_data_source.dart';
 import 'features/slot_assignments/presentation/controllers/slot_assignments_controller.dart';
-import 'features/upload/domain/repositories/video_repository.dart';
+import 'features/upload/data/video_repository.dart';
 import 'shared/design_system/theme.dart';
 import 'shared/services/api_service.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/video_service.dart';
 
 void main() {
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      final prefs = await SharedPreferences.getInstance();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         FlutterError.presentError(details);
         _logError('Flutter Error', details.exception, details.stack);
       };
 
-      runApp(MyApp(prefs: prefs));
+      runApp(const MyApp());
     },
     (error, stack) {
       _logError('Async Error', error, stack);
@@ -58,29 +60,29 @@ class _CustomErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Material(
-      color: AppDesignSystem.backgroundMedium,
+      color: colorScheme.surface,
       child: Container(
         padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: AppDesignSystem.errorRed),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
               'Something went wrong',
-              style: TextStyle(
-                color: AppDesignSystem.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDesignSystem.spacingSm),
             Text(
               'The app encountered an error. Please restart the app.',
-              style: AppDesignSystem.feedbackStyle
-                  .copyWith(color: AppDesignSystem.textSecondary),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             if (kDebugMode) ...[
@@ -88,14 +90,13 @@ class _CustomErrorWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
                 decoration: BoxDecoration(
-                  color: AppDesignSystem.backgroundMedium,
-                  borderRadius:
-                      BorderRadius.circular(AppDesignSystem.radiusXs),
+                  color: colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
                 ),
                 child: Text(
                   details.exception.toString(),
-                  style: AppDesignSystem.smallTextStyle.copyWith(
-                    color: AppDesignSystem.errorRed,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
                     fontFamily: 'monospace',
                   ),
                 ),
@@ -109,9 +110,7 @@ class _CustomErrorWidget extends StatelessWidget {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.prefs});
-
-  final SharedPreferences prefs;
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -133,17 +132,12 @@ class MyApp extends StatelessWidget {
         ProxyProvider<VideoService, VideoRepository>(
           update: (_, videoService, _) => VideoRepository(videoService),
         ),
-        Provider<HistoryLocalDataSource>(
-          create: (_) => HistoryLocalDataSource(prefs),
-        ),
-        ProxyProvider2<HistoryLocalDataSource, ApiService, HistoryRepository>(
-          update: (_, localDataSource, apiService, _) => HistoryRepository(
-            localDataSource: localDataSource,
-            apiService: apiService,
-          ),
-        ),
 
         // Data sources (global — stateless, safe to share)
+        Provider<DancesDataSource>(
+          create: (context) =>
+              DancesDataSource(context.read<ApiService>().client),
+        ),
         Provider<GroupsDataSource>(
           create: (context) =>
               GroupsDataSource(context.read<ApiService>().client),
@@ -156,9 +150,9 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               RoutinesDataSource(context.read<ApiService>().client),
         ),
-        Provider<RoutineSessionsDataSource>(
+        Provider<RoutineInstancesDataSource>(
           create: (context) =>
-              RoutineSessionsDataSource(context.read<ApiService>().client),
+              RoutineInstancesDataSource(context.read<ApiService>().client),
         ),
         Provider<VideosDataSource>(
           create: (context) =>
@@ -180,19 +174,23 @@ class MyApp extends StatelessWidget {
         // Global controllers (list-level state only)
         // Note: VideosController and NotesController are scoped to
         // SessionDetailPage, not provided globally.
+        ChangeNotifierProvider<DancesController>(
+          create: (context) =>
+              DancesController(dataSource: context.read<DancesDataSource>()),
+        ),
         ChangeNotifierProvider<GroupsController>(
-          create: (context) => GroupsController(
-            dataSource: context.read<GroupsDataSource>(),
-          ),
+          create: (context) =>
+              GroupsController(dataSource: context.read<GroupsDataSource>()),
         ),
         ChangeNotifierProvider<RoutinesController>(
           create: (context) => RoutinesController(
             dataSource: context.read<RoutinesDataSource>(),
+            dancerSlotsDataSource: context.read<DancerSlotsDataSource>(),
           ),
         ),
-        ChangeNotifierProvider<RoutineSessionsController>(
-          create: (context) => RoutineSessionsController(
-            dataSource: context.read<RoutineSessionsDataSource>(),
+        ChangeNotifierProvider<RoutineInstancesController>(
+          create: (context) => RoutineInstancesController(
+            dataSource: context.read<RoutineInstancesDataSource>(),
           ),
         ),
         ChangeNotifierProvider<DancerSlotsController>(
@@ -207,9 +205,9 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp.router(
-        title: 'Dance Coach',
+        title: 'DanceNote',
         debugShowCheckedModeBanner: false,
-        theme: AppDesignSystem.darkTheme,
+        theme: AppDesignSystem.theme,
         routerConfig: appRouter,
         builder: (context, child) {
           ErrorWidget.builder = (FlutterErrorDetails details) {

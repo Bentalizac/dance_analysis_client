@@ -4,15 +4,19 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../widgets/navigation_card.dart';
 
+const title = "DanceNote";
+
 /// Home page - main landing page with navigation to all features
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: AppDesignSystem.backgroundLight,
-      appBar: AppBar(title: const Text('Dance Coach'), centerTitle: true),
+      appBar: AppBar(title: const Text(title), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
@@ -23,31 +27,23 @@ class HomePage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDesignSystem.spacingXl),
                 decoration: BoxDecoration(
-                  color: AppDesignSystem.backgroundMedium,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.school,
-                      size: 64,
-                      color: AppDesignSystem.mainAccent,
-                    ),
+                    Icon(Icons.school, size: 64, color: colorScheme.primary),
                     const SizedBox(height: AppDesignSystem.spacingMd),
                     Text(
-                      'Welcome to Dance Coach',
-                      style: TextStyle(
-                        color: AppDesignSystem.textPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      'Welcome to $title',
+                      style: textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppDesignSystem.spacingSm),
                     Text(
                       'AI-powered dance analysis and coaching',
-                      style: AppDesignSystem.feedbackStyle.copyWith(
-                        color: AppDesignSystem.textSecondary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -78,27 +74,6 @@ class HomePage extends StatelessWidget {
                 title: 'Profile',
                 subtitle: 'Manage your account settings',
                 onTap: () => context.go('/profile'),
-              ),
-              const SizedBox(height: AppDesignSystem.spacingXl),
-
-              // Demo section
-              Divider(color: AppDesignSystem.dividerLight),
-              const SizedBox(height: AppDesignSystem.spacingMd),
-              Text(
-                'Development',
-                style: AppDesignSystem.feedbackStyle.copyWith(
-                  color: AppDesignSystem.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppDesignSystem.spacingMd),
-
-              NavigationCard(
-                icon: Icons.science,
-                title: 'Demo Results',
-                subtitle: 'View sample analysis results',
-                onTap: () => context.push('/demo'),
-                color: AppDesignSystem.mainAccent.withValues(alpha: 0.2),
               ),
             ],
           ),

@@ -2,15 +2,22 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../../generated/api/models/routine_response.dart';
+import '../../../dancer_slots/data/dancer_slots_data_source.dart';
 import '../../data/routines_data_source.dart';
 import 'routines_state.dart';
 
 /// Coordinates routine CRUD for the UI.
 class RoutinesController extends ChangeNotifier {
-  RoutinesController({required RoutinesDataSource dataSource})
-      : _dataSource = dataSource;
+  RoutinesController({
+    required RoutinesDataSource dataSource,
+    required DancerSlotsDataSource dancerSlotsDataSource,
+  })  : _dataSource = dataSource,
+        _dancerSlotsDataSource = dancerSlotsDataSource;
 
   final RoutinesDataSource _dataSource;
+  final DancerSlotsDataSource _dancerSlotsDataSource;
+
+  static const _defaultSlotLabels = ['Lead', 'Follow'];
 
   RoutinesState _state = RoutinesState.initial();
   RoutinesState get state => _state;
@@ -41,14 +48,22 @@ class RoutinesController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Creates a routine and returns it so callers can chain further operations
-  /// (e.g. creating a session tied to a group).
+  /// Creates a routine with default Lead/Follow slots, then returns it so
+  /// callers can chain further operations (e.g. creating a session).
   Future<RoutineResponse?> createRoutine({
     required String title,
     required String danceId,
   }) async {
     try {
       final routine = await _dataSource.createRoutine(title: title, danceId: danceId);
+      await Future.wait([
+        for (var i = 0; i < _defaultSlotLabels.length; i++)
+          _dancerSlotsDataSource.createSlot(
+            routine.id,
+            label: _defaultSlotLabels[i],
+            orderIndex: i,
+          ),
+      ]);
       await loadRoutines();
       return routine;
     } on AppException catch (e) {

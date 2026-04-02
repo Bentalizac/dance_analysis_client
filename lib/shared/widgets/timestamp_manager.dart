@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/video_timestamp.dart';
+import '../models/video_timestamp.dart';
 import '../design_system/theme.dart';
 import 'inline_timestamp_form.dart';
 import 'timestamp_list_item.dart';
@@ -13,28 +13,6 @@ import 'timestamp_list_item.dart';
 /// - Inline form for adding/editing timestamps
 /// - Empty state when no timestamps exist
 /// - Help text explaining timestamp functionality
-///
-/// The widget is designed to be reusable across different contexts (upload,
-/// results review, comparison views) by accepting timestamps and callbacks
-/// as parameters rather than managing state internally.
-///
-/// Example usage:
-/// ```dart
-/// TimestampManager(
-///   timestamps: state.timestamps,
-///   isAddingTimestamp: state.isAddingTimestamp,
-///   editingTimestampId: state.editingTimestampId,
-///   currentVideoPosition: Duration(seconds: 10),
-///   maxDuration: Duration(seconds: 120),
-///   onAddTimestamp: () => controller.startAddingTimestamp(),
-///   onSaveTimestamp: (start, end, label) => controller.addTimestamp(start, end, label),
-///   onEditTimestamp: (id) => controller.startEditingTimestamp(id),
-///   onUpdateTimestamp: (id, start, end, label) => controller.updateTimestamp(id, start, end, label),
-///   onDeleteTimestamp: (id) => controller.removeTimestamp(id),
-///   onSeekToTimestamp: (time) => videoController.seekTo(time),
-///   onCancelForm: () => controller.cancelTimestampForm(),
-/// )
-/// ```
 class TimestampManager extends StatelessWidget {
   const TimestampManager({
     super.key,
@@ -62,27 +40,15 @@ class TimestampManager extends StatelessWidget {
   final String? editingTimestampId;
 
   /// Current position of the video player
-  /// Used to pre-fill the timestamp form with current time
   final Duration currentVideoPosition;
 
   /// Maximum duration for timestamp validation
-  /// Typically the video duration
   final Duration? maxDuration;
 
-  /// Callback invoked when user taps the "Add" button
   final VoidCallback onAddTimestamp;
-
-  /// Callback invoked when user saves a new timestamp
-  /// Receives (startTime, endTime, label)
   final void Function(Duration startTime, Duration endTime, String label)
   onSaveTimestamp;
-
-  /// Callback invoked when user starts editing a timestamp
-  /// Receives the timestamp ID
   final ValueChanged<String> onEditTimestamp;
-
-  /// Callback invoked when user saves an edited timestamp
-  /// Receives (id, startTime, endTime, label)
   final void Function(
     String id,
     Duration startTime,
@@ -90,39 +56,28 @@ class TimestampManager extends StatelessWidget {
     String label,
   )
   onUpdateTimestamp;
-
-  /// Callback invoked when user deletes a timestamp
-  /// Receives the timestamp ID
   final ValueChanged<String> onDeleteTimestamp;
-
-  /// Callback invoked when user taps a timestamp to seek the video
-  /// Receives the start time to seek to
   final ValueChanged<Duration> onSeekToTimestamp;
-
-  /// Callback invoked when user cancels the add/edit form
   final VoidCallback onCancelForm;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header with add button
-        _buildHeader(),
-
-        // Timestamp list or empty state
+        _buildHeader(context),
         Expanded(
           child: timestamps.isEmpty && !isAddingTimestamp
-              ? _buildEmptyState()
-              : _buildTimestampList(),
+              ? _buildEmptyState(context)
+              : _buildTimestampList(context),
         ),
-
-        // Info text
-        _buildInfoText(),
+        _buildInfoText(context),
       ],
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
       child: Row(
@@ -131,21 +86,17 @@ class TimestampManager extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Dance Steps',
-                  style: TextStyle(
-                    color: AppDesignSystem.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: textTheme.titleLarge,
                 ),
                 const SizedBox(height: AppDesignSystem.spacingXs),
                 Text(
                   timestamps.isEmpty
                       ? 'No timestamps added'
                       : '${timestamps.length} timestamp${timestamps.length == 1 ? '' : 's'}',
-                  style: AppDesignSystem.feedbackStyle.copyWith(
-                    color: AppDesignSystem.textSecondary,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -157,25 +108,13 @@ class TimestampManager extends StatelessWidget {
                 : onAddTimestamp,
             icon: const Icon(Icons.add, size: 18),
             label: const Text('Add'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppDesignSystem.mainAccent,
-              foregroundColor: AppDesignSystem.textOnDark,
-              disabledBackgroundColor: AppDesignSystem.textDisabled,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDesignSystem.spacingMd,
-                vertical: AppDesignSystem.spacingSm,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDesignSystem.radiusXs),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimestampList() {
+  Widget _buildTimestampList(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignSystem.spacingMd,
@@ -218,7 +157,10 @@ class TimestampManager extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
@@ -229,13 +171,13 @@ class TimestampManager extends StatelessWidget {
             Icon(
               Icons.bookmark_border,
               size: 40,
-              color: AppDesignSystem.textSecondary.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingSm),
             Text(
               'No timestamps yet',
-              style: AppDesignSystem.feedbackStyle.copyWith(
-                color: AppDesignSystem.textSecondary,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: AppDesignSystem.spacingXs),
@@ -243,9 +185,7 @@ class TimestampManager extends StatelessWidget {
               child: Text(
                 'Add timestamps to mark different\ndance steps or routine segments',
                 textAlign: TextAlign.center,
-                style: AppDesignSystem.smallTextStyle.copyWith(
-                  color: AppDesignSystem.textSecondary,
-                ),
+                style: textTheme.bodySmall,
                 overflow: TextOverflow.fade,
                 maxLines: 2,
               ),
@@ -256,7 +196,9 @@ class TimestampManager extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoText() {
+  Widget _buildInfoText(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
       child: Text(
@@ -264,8 +206,7 @@ class TimestampManager extends StatelessWidget {
             ? 'Timestamps help mark different dance steps in longer videos for better analysis.'
             : 'Tap a timestamp to seek the video. Edit or delete as needed.',
         textAlign: TextAlign.center,
-        style: AppDesignSystem.smallTextStyle.copyWith(
-          color: AppDesignSystem.textSecondary,
+        style: textTheme.bodySmall?.copyWith(
           fontStyle: FontStyle.italic,
         ),
       ),

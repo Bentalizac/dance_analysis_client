@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/pose_data.dart';
+import '../models/pose_data.dart';
 import '../design_system/theme.dart';
 
 /// Custom painter for drawing pose skeleton overlay on top of video
@@ -10,6 +10,7 @@ class PoseOverlayPainter extends CustomPainter {
     this.showSkeleton = true,
     this.showKeypoints = true,
     this.highlightedKeypointIndices = const [],
+    this.skeletonColor = AppDesignSystem.mainAccent,
     this.highlightColor = AppDesignSystem.errorRed,
   });
 
@@ -28,7 +29,10 @@ class PoseOverlayPainter extends CustomPainter {
   /// Indices of keypoints to highlight (e.g., for feedback)
   final List<int> highlightedKeypointIndices;
 
-  /// Color for highlighted elements
+  /// Color for skeleton lines and keypoints — pass colorScheme.primary from caller
+  final Color skeletonColor;
+
+  /// Color for highlighted elements — pass colorScheme.error from caller
   final Color highlightColor;
 
   @override
@@ -65,7 +69,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final paint = Paint()
-      ..color = AppDesignSystem.mainAccent.withValues(alpha: 0.6)
+      ..color = skeletonColor.withValues(alpha: 0.6)
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
@@ -96,7 +100,7 @@ class PoseOverlayPainter extends CustomPainter {
     double scaleY,
   ) {
     final paint = Paint()
-      ..color = AppDesignSystem.mainAccent
+      ..color = skeletonColor
       ..style = PaintingStyle.fill;
 
     for (var i = 0; i < keypoints.length; i++) {
