@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/web_constrained_body.dart';
 import '../controllers/groups_controller.dart';
 import '../controllers/groups_state.dart';
 import '../widgets/create_group_dialog.dart';
@@ -28,7 +30,9 @@ class _GroupsListPageState extends State<GroupsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Groups'), centerTitle: true),
+      appBar: kIsWeb
+          ? null
+          : AppBar(title: const Text('Groups'), centerTitle: true),
       body: Consumer<GroupsController>(
         builder: (context, controller, _) {
           final state = controller.state;
@@ -45,15 +49,86 @@ class _GroupsListPageState extends State<GroupsListPage> {
             return _buildEmptyState();
           }
 
-          return RefreshIndicator(
-            onRefresh: controller.loadGroups,
+          return WebConstrainedBody(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (kIsWeb) _buildWebHeader(context),
+                Expanded(child: _buildList(context, controller)),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: kIsWeb
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _showCreateGroupDialog(context),
+              child: const Icon(Icons.add),
+            ),
+    );
+  }
+
+  /// Page heading + add button shown on web in place of the suppressed AppBar.
+  Widget _buildWebHeader(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignSystem.spacingMd,
+        AppDesignSystem.spacingLg,
+        AppDesignSystem.spacingMd,
+        AppDesignSystem.spacingSm,
+      ),
+      child: Row(
+        children: [
+          Text('Groups', style: textTheme.headlineSmall),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => _showCreateGroupDialog(context),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('New Group'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, GroupsController controller) {
+    final groups = controller.state.groups;
+
+    // Web: responsive grid (2 cols at ≥600px) with scrollbar, no pull-to-refresh.
+    if (kIsWeb) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 600) {
+            return Scrollbar(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppDesignSystem.spacingSm,
+                  mainAxisSpacing: AppDesignSystem.spacingSm,
+                  mainAxisExtent: 88,
+                ),
+                itemCount: groups.length,
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  return GroupCard(
+                    group: group,
+                    onTap: () => context.push('/groups/${group.id}'),
+                  );
+                },
+              ),
+            );
+          }
+          return Scrollbar(
             child: ListView.separated(
               padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-              itemCount: state.groups.length,
+              itemCount: groups.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(height: AppDesignSystem.spacingSm),
               itemBuilder: (context, index) {
-                final group = state.groups[index];
+                final group = groups[index];
                 return GroupCard(
                   group: group,
                   onTap: () => context.push('/groups/${group.id}'),
@@ -62,10 +137,24 @@ class _GroupsListPageState extends State<GroupsListPage> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateGroupDialog(context),
-        child: const Icon(Icons.add),
+      );
+    }
+
+    // Native: pull-to-refresh + single-column list.
+    return RefreshIndicator(
+      onRefresh: controller.loadGroups,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+        itemCount: groups.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: AppDesignSystem.spacingSm),
+        itemBuilder: (context, index) {
+          final group = groups[index];
+          return GroupCard(
+            group: group,
+            onTap: () => context.push('/groups/${group.id}'),
+          );
+        },
       ),
     );
   }
@@ -86,10 +175,7 @@ class _GroupsListPageState extends State<GroupsListPage> {
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppDesignSystem.spacingMd),
-            Text(
-              'No groups yet',
-              style: textTheme.titleLarge,
-            ),
+            Text('No groups yet', style: textTheme.titleLarge),
             const SizedBox(height: AppDesignSystem.spacingSm),
             Text(
               'Create a group to start collaborating.',
@@ -120,11 +206,7 @@ class _GroupsListPageState extends State<GroupsListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const SizedBox(height: AppDesignSystem.spacingMd),
             Text(
               message ?? 'Failed to load groups.',

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/web_constrained_body.dart';
 import '../controllers/routines_controller.dart';
 import '../controllers/routines_state.dart';
 import '../widgets/create_routine_dialog.dart';
@@ -31,7 +33,9 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Routines'), centerTitle: true),
+      appBar: kIsWeb
+          ? null
+          : AppBar(title: const Text('My Routines'), centerTitle: true),
       body: Consumer<RoutinesController>(
         builder: (context, ctrl, _) {
           final state = ctrl.state;
@@ -45,7 +49,8 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             return Center(
               child: Text(
                 state.errorMessage ?? 'Failed to load routines.',
-                style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                style:
+                    textTheme.bodyMedium?.copyWith(color: colorScheme.error),
               ),
             );
           }
@@ -69,7 +74,9 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
                   ),
                   const SizedBox(height: AppDesignSystem.spacingSm),
                   Text(
-                    'Tap + to create your first routine.',
+                    kIsWeb
+                        ? 'Click + New Routine to get started.'
+                        : 'Tap + to create your first routine.',
                     style: textTheme.bodySmall,
                   ),
                 ],
@@ -77,15 +84,85 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () => ctrl.loadRoutines(),
+          return WebConstrainedBody(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (kIsWeb) _buildWebHeader(context, ctrl),
+                Expanded(child: _buildList(context, ctrl)),
+              ],
+            ),
+          );
+        },
+      ),
+      floatingActionButton: kIsWeb
+          ? null
+          : FloatingActionButton(
+              onPressed: () => _showCreateRoutineDialog(context),
+              child: const Icon(Icons.add),
+            ),
+    );
+  }
+
+  Widget _buildWebHeader(BuildContext context, RoutinesController ctrl) {
+    final textTheme = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppDesignSystem.spacingMd,
+        AppDesignSystem.spacingLg,
+        AppDesignSystem.spacingMd,
+        AppDesignSystem.spacingSm,
+      ),
+      child: Row(
+        children: [
+          Text('My Routines', style: textTheme.headlineSmall),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => _showCreateRoutineDialog(context),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('New Routine'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, RoutinesController ctrl) {
+    final routines = ctrl.state.routines;
+
+    // Web: responsive grid + scrollbar, no pull-to-refresh.
+    if (kIsWeb) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 600) {
+            return Scrollbar(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppDesignSystem.spacingSm,
+                  mainAxisSpacing: AppDesignSystem.spacingSm,
+                  mainAxisExtent: 72,
+                ),
+                itemCount: routines.length,
+                itemBuilder: (context, index) {
+                  final routine = routines[index];
+                  return RoutineCard(
+                    routine: routine,
+                    onTap: () => context.push('/routines/${routine.id}'),
+                  );
+                },
+              ),
+            );
+          }
+          return Scrollbar(
             child: ListView.separated(
               padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-              itemCount: state.routines.length,
+              itemCount: routines.length,
               separatorBuilder: (_, _) =>
                   const SizedBox(height: AppDesignSystem.spacingSm),
               itemBuilder: (context, index) {
-                final routine = state.routines[index];
+                final routine = routines[index];
                 return RoutineCard(
                   routine: routine,
                   onTap: () => context.push('/routines/${routine.id}'),
@@ -94,10 +171,24 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateRoutineDialog(context),
-        child: const Icon(Icons.add),
+      );
+    }
+
+    // Native: pull-to-refresh + single-column list.
+    return RefreshIndicator(
+      onRefresh: () => ctrl.loadRoutines(),
+      child: ListView.separated(
+        padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+        itemCount: routines.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: AppDesignSystem.spacingSm),
+        itemBuilder: (context, index) {
+          final routine = routines[index];
+          return RoutineCard(
+            routine: routine,
+            onTap: () => context.push('/routines/${routine.id}'),
+          );
+        },
       ),
     );
   }

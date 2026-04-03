@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -65,6 +66,7 @@ class _CreateInviteDialogState extends State<CreateInviteDialog> {
 
     if (_sent) {
       return AlertDialog(
+        constraints: kIsWeb ? const BoxConstraints(maxWidth: 480) : null,
         title: const Text('Invite Sent'),
         content: Text(
           'An invitation email has been sent to ${_emailController.text.trim()}.',
@@ -82,6 +84,7 @@ class _CreateInviteDialogState extends State<CreateInviteDialog> {
     }
 
     return AlertDialog(
+      constraints: kIsWeb ? const BoxConstraints(maxWidth: 480) : null,
       title: const Text('Invite Member'),
       content: Column(
         mainAxisSize: MainAxisSize.min,

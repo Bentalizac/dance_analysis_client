@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -142,55 +143,110 @@ class _VideoDetailContentState extends State<_VideoDetailContent> {
             foregroundColor: colorScheme.onSurface,
           ),
           body: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: _buildVideoPlayer(colorScheme),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Consumer<GroupsController>(
-                    builder: (context, groupsCtrl, _) {
-                      if (groupsCtrl.state.status == GroupsStatus.loaded &&
-                          groupsCtrl.state.groups.isNotEmpty) {
-                        final names = [
-                          'All',
-                          ...groupsCtrl.state.groups.map((g) => g.name),
-                        ];
-                        return GroupFilterChips(
-                          groups: names,
-                          selectedIndex: _selectedGroupIndex,
-                          onSelected: (i) =>
-                              setState(() => _selectedGroupIndex = i),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(child: _NotesList(instanceId: widget.instanceId)),
-                ComposerBar(
-                  hintText: 'Add a note...',
-                  onSubmit: (text) =>
-                      context.read<NotesController>().addVideoNote(
-                            sessionId: widget.instanceId,
-                            videoId: widget.videoId,
-                            noteType: NoteType.feedback,
-                            contents: text,
-                          ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (kIsWeb && constraints.maxWidth >= 800) {
+                  return _buildWideLayout(context, colorScheme);
+                }
+                return _buildNarrowLayout(context, colorScheme);
+              },
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNarrowLayout(BuildContext context, ColorScheme colorScheme) {
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: _buildVideoPlayer(colorScheme),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildGroupFilter(context),
+        const SizedBox(height: 16),
+        Expanded(child: _NotesList(instanceId: widget.instanceId)),
+        _buildComposer(context),
+      ],
+    );
+  }
+
+  Widget _buildWideLayout(BuildContext context, ColorScheme colorScheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          flex: 6,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: _buildVideoPlayer(colorScheme),
+                ),
+                const SizedBox(height: 16),
+                _buildGroupFilter(context),
+              ],
+            ),
+          ),
+        ),
+        VerticalDivider(width: 1),
+        Expanded(
+          flex: 4,
+          child: Column(
+            children: [
+              Expanded(
+                child: Scrollbar(
+                  child: _NotesList(instanceId: widget.instanceId),
+                ),
+              ),
+              _buildComposer(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupFilter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Consumer<GroupsController>(
+        builder: (context, groupsCtrl, _) {
+          if (groupsCtrl.state.status == GroupsStatus.loaded &&
+              groupsCtrl.state.groups.isNotEmpty) {
+            final names = [
+              'All',
+              ...groupsCtrl.state.groups.map((g) => g.name),
+            ];
+            return GroupFilterChips(
+              groups: names,
+              selectedIndex: _selectedGroupIndex,
+              onSelected: (i) => setState(() => _selectedGroupIndex = i),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildComposer(BuildContext context) {
+    return ComposerBar(
+      hintText: 'Add a note...',
+      onSubmit: (text) => context.read<NotesController>().addVideoNote(
+            sessionId: widget.instanceId,
+            videoId: widget.videoId,
+            noteType: NoteType.feedback,
+            contents: text,
+          ),
     );
   }
 

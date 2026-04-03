@@ -471,6 +471,17 @@ class AppDesignSystem {
         ),
       ),
 
+      // -- Floating action button ---------------------------------------------
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: mainAccent,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        focusElevation: 4,
+        hoverElevation: 4,
+        highlightElevation: 6,
+        shape: CircleBorder(),
+      ),
+
       // -- Snack bar ----------------------------------------------------------
       snackBarTheme: SnackBarThemeData(
         backgroundColor: backgroundDark,

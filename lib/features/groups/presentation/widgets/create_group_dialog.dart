@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../../../shared/design_system/theme.dart';
@@ -59,6 +60,7 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
     final textTheme = Theme.of(context).textTheme;
 
     return AlertDialog(
+      constraints: kIsWeb ? const BoxConstraints(maxWidth: 480) : null,
       title: const Text('Create Group'),
       content: Column(
         mainAxisSize: MainAxisSize.min,

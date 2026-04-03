@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../../../generated/api/models/note_response.dart';
 import '../../../../generated/api/models/note_type.dart';
 import '../../../../generated/api/models/video_response.dart';
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/web_constrained_body.dart';
 import '../../../routine_notes/data/notes_data_source.dart';
 import '../../../routine_notes/presentation/controllers/notes_controller.dart';
 import '../../../routine_videos/data/videos_data_source.dart';
@@ -83,6 +85,32 @@ class _InstanceDetailContentState extends State<_InstanceDetailContent>
           appBar: AppBar(
             title: Text(title),
             centerTitle: true,
+            actions: kIsWeb
+                ? [
+                    AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, _) {
+                        switch (_tabController.index) {
+                          case 0:
+                            return IconButton(
+                              icon: const Icon(Icons.upload),
+                              tooltip: 'Upload Video',
+                              onPressed: () => context.push(
+                                  '/instances/${widget.instanceId}/upload'),
+                            );
+                          case 1:
+                            return IconButton(
+                              icon: const Icon(Icons.note_add),
+                              tooltip: 'Add Note',
+                              onPressed: () => _showAddNoteDialog(context),
+                            );
+                          default:
+                            return const SizedBox.shrink();
+                        }
+                      },
+                    ),
+                  ]
+                : null,
             bottom: TabBar(
               controller: _tabController,
               tabs: const [
@@ -98,22 +126,24 @@ class _InstanceDetailContentState extends State<_InstanceDetailContent>
               _NotesTab(instanceId: widget.instanceId),
             ],
           ),
-          floatingActionButton: AnimatedBuilder(
-            animation: _tabController,
-            builder: (context, _) {
-              if (_tabController.index == 0) {
-                return FloatingActionButton(
-                  onPressed: () =>
-                      context.push('/instances/${widget.instanceId}/upload'),
-                  child: const Icon(Icons.upload),
-                );
-              }
-              return FloatingActionButton(
-                onPressed: () => _showAddNoteDialog(context),
-                child: const Icon(Icons.note_add),
-              );
-            },
-          ),
+          floatingActionButton: kIsWeb
+              ? null
+              : AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) {
+                    if (_tabController.index == 0) {
+                      return FloatingActionButton(
+                        onPressed: () => context
+                            .push('/instances/${widget.instanceId}/upload'),
+                        child: const Icon(Icons.upload),
+                      );
+                    }
+                    return FloatingActionButton(
+                      onPressed: () => _showAddNoteDialog(context),
+                      child: const Icon(Icons.note_add),
+                    );
+                  },
+                ),
         );
       },
     );
@@ -129,6 +159,8 @@ class _InstanceDetailContentState extends State<_InstanceDetailContent>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
+          constraints:
+              kIsWeb ? const BoxConstraints(maxWidth: 480) : null,
           title: const Text('Add Note'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -217,7 +249,9 @@ class _VideosTab extends StatelessWidget {
                 ),
                 const SizedBox(height: AppDesignSystem.spacingSm),
                 Text(
-                  'Tap the upload button to add one.',
+                  kIsWeb
+                      ? 'Click the upload button to add one.'
+                      : 'Tap the upload button to add one.',
                   style: textTheme.bodySmall,
                 ),
               ],
@@ -225,17 +259,25 @@ class _VideosTab extends StatelessWidget {
           );
         }
 
-        return RefreshIndicator(
-          onRefresh: () => ctrl.loadVideos(instanceId),
-          child: ListView.separated(
-            padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-            itemCount: ctrl.state.videos.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(height: AppDesignSystem.spacingSm),
-            itemBuilder: (context, index) {
-              final video = ctrl.state.videos[index];
-              return _VideoTile(video: video, instanceId: instanceId);
-            },
+        final list = ListView.separated(
+          padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+          itemCount: ctrl.state.videos.length,
+          separatorBuilder: (_, _) =>
+              const SizedBox(height: AppDesignSystem.spacingSm),
+          itemBuilder: (context, index) {
+            final video = ctrl.state.videos[index];
+            return _VideoTile(video: video, instanceId: instanceId);
+          },
+        );
+
+        if (kIsWeb) {
+          return WebConstrainedBody(child: Scrollbar(child: list));
+        }
+
+        return WebConstrainedBody(
+          child: RefreshIndicator(
+            onRefresh: () => ctrl.loadVideos(instanceId),
+            child: list,
           ),
         );
       },
@@ -296,6 +338,8 @@ class _VideoTile extends StatelessWidget {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
+                    constraints:
+                        kIsWeb ? const BoxConstraints(maxWidth: 360) : null,
                     title: const Text('Delete video?'),
                     actions: [
                       TextButton(
@@ -366,13 +410,17 @@ class _NotesTab extends StatelessWidget {
           );
         }
 
-        return ListView.separated(
+        final list = ListView.separated(
           padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
           itemCount: ctrl.state.notes.length,
           separatorBuilder: (_, _) =>
               const SizedBox(height: AppDesignSystem.spacingSm),
           itemBuilder: (context, index) =>
               _NoteTile(note: ctrl.state.notes[index], instanceId: instanceId),
+        );
+
+        return WebConstrainedBody(
+          child: kIsWeb ? Scrollbar(child: list) : list,
         );
       },
     );

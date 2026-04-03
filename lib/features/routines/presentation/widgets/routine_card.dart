@@ -17,6 +17,7 @@ class RoutineCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(AppDesignSystem.radiusSm),
       child: Container(
         padding: const EdgeInsets.all(AppDesignSystem.spacingMd),

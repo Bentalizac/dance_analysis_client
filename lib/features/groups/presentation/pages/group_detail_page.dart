@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../generated/api/models/group_membership_response.dart';
 import '../../../../shared/design_system/theme.dart';
+import '../../../../shared/widgets/web_constrained_body.dart';
 import '../../../group_invites/presentation/widgets/create_invite_dialog.dart';
 import '../../../group_invites/presentation/widgets/invites_tab.dart';
 import '../../../routine_instances/presentation/controllers/routine_instances_controller.dart';
@@ -58,6 +60,34 @@ class _GroupDetailPageState extends State<GroupDetailPage>
           appBar: AppBar(
             title: Text(group?.name ?? 'Group'),
             centerTitle: true,
+            // On web the FAB is replaced by a tab-aware action in the AppBar.
+            actions: kIsWeb
+                ? [
+                    AnimatedBuilder(
+                      animation: _tabController,
+                      builder: (context, _) {
+                        switch (_tabController.index) {
+                          case 0:
+                            return IconButton(
+                              icon: const Icon(Icons.add),
+                              tooltip: 'Add Routine',
+                              onPressed: () =>
+                                  _showCreateInstanceDialog(context),
+                            );
+                          case 2:
+                            return IconButton(
+                              icon: const Icon(Icons.person_add),
+                              tooltip: 'Invite Member',
+                              onPressed: () =>
+                                  _showCreateInviteDialog(context),
+                            );
+                          default:
+                            return const SizedBox.shrink();
+                        }
+                      },
+                    ),
+                  ]
+                : null,
             bottom: TabBar(
               controller: _tabController,
               tabs: const [
@@ -81,7 +111,7 @@ class _GroupDetailPageState extends State<GroupDetailPage>
                     InvitesTab(groupId: widget.groupId),
                   ],
                 ),
-          floatingActionButton: _buildFab(),
+          floatingActionButton: kIsWeb ? null : _buildFab(),
         );
       },
     );
@@ -92,12 +122,12 @@ class _GroupDetailPageState extends State<GroupDetailPage>
       animation: _tabController,
       builder: (context, _) {
         switch (_tabController.index) {
-          case 0: // Routines
+          case 0:
             return FloatingActionButton(
               onPressed: () => _showCreateInstanceDialog(context),
               child: const Icon(Icons.add),
             );
-          case 2: // Invites
+          case 2:
             return FloatingActionButton(
               onPressed: () => _showCreateInviteDialog(context),
               child: const Icon(Icons.person_add),
@@ -114,25 +144,21 @@ class _GroupDetailPageState extends State<GroupDetailPage>
       context: context,
       builder: (_) => CreateInstanceInGroupDialog(
         onSubmit: (title, danceId) async {
-          // Capture controllers before any awaits
           final routinesCtrl = context.read<RoutinesController>();
           final instancesCtrl = context.read<RoutineInstancesController>();
 
-          // Step 1: Create the routine
           final routine = await routinesCtrl.createRoutine(
             title: title,
             danceId: danceId,
           );
           if (routine == null) return false;
 
-          // Step 2: Create an instance tied to this group
           final instance = await instancesCtrl.createInstance(
             routine.id,
             groupId: widget.groupId,
           );
           if (instance == null) return false;
 
-          // Refresh the instances list and navigate to the new instance
           await instancesCtrl.loadGroupInstances(widget.groupId);
           if (context.mounted) {
             context.push('/instances/${instance.id}');
@@ -162,39 +188,38 @@ class _RoutinesTab extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Consumer<RoutineInstancesController>(
-      builder: (context, ctrl, _) {
-        if (ctrl.state.status == RoutineInstancesStatus.loading &&
-            ctrl.state.instances.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return WebConstrainedBody(
+      child: Consumer<RoutineInstancesController>(
+        builder: (context, ctrl, _) {
+          if (ctrl.state.status == RoutineInstancesStatus.loading &&
+              ctrl.state.instances.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final instances = ctrl.state.instances;
-        if (instances.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.video_library_outlined,
-                  size: 64,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
-                const SizedBox(height: AppDesignSystem.spacingMd),
-                Text(
-                  'No routines yet',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+          final instances = ctrl.state.instances;
+          if (instances.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.video_library_outlined,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
-                ),
-              ],
-            ),
-          );
-        }
+                  const SizedBox(height: AppDesignSystem.spacingMd),
+                  Text(
+                    'No routines yet',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
 
-        return RefreshIndicator(
-          onRefresh: () => ctrl.loadGroupInstances(groupId),
-          child: ListView.separated(
+          final list = ListView.separated(
             padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
             itemCount: instances.length,
             separatorBuilder: (_, _) =>
@@ -206,9 +231,16 @@ class _RoutinesTab extends StatelessWidget {
                 onTap: () => context.push('/instances/${instance.id}'),
               );
             },
-          ),
-        );
-      },
+          );
+
+          if (kIsWeb) return Scrollbar(child: list);
+
+          return RefreshIndicator(
+            onRefresh: () => ctrl.loadGroupInstances(groupId),
+            child: list,
+          );
+        },
+      ),
     );
   }
 }
@@ -235,56 +267,66 @@ class _MembersTab extends StatelessWidget {
       return const Center(child: Text('No members.'));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-      itemCount: members.length,
-      itemBuilder: (context, index) {
-        final member = members[index];
-        final isCurrentUser = member.userId == currentUserId;
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: colorScheme.primaryContainer,
-            child: Icon(Icons.person, color: colorScheme.primary),
-          ),
-          title: Text(
-            isCurrentUser ? 'You' : member.username,
-            style: textTheme.bodyMedium,
-          ),
-          subtitle: Text(member.role.toString(), style: textTheme.bodySmall),
-          trailing: member.role.toString() != 'owner'
-              ? IconButton(
-                  icon: Icon(
-                    Icons.remove_circle_outline,
-                    color: colorScheme.error,
-                  ),
-                  onPressed: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Remove member?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: Text(
-                              'Remove',
-                              style: TextStyle(color: colorScheme.error),
-                            ),
-                          ),
-                        ],
+    return WebConstrainedBody(
+      child: Scrollbar(
+        child: ListView.builder(
+          padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+          itemCount: members.length,
+          itemBuilder: (context, index) {
+            final member = members[index];
+            final isCurrentUser = member.userId == currentUserId;
+            return ListTile(
+              mouseCursor: SystemMouseCursors.basic,
+              leading: CircleAvatar(
+                backgroundColor: colorScheme.primaryContainer,
+                child: Icon(Icons.person, color: colorScheme.primary),
+              ),
+              title: Text(
+                isCurrentUser ? 'You' : member.username,
+                style: textTheme.bodyMedium,
+              ),
+              subtitle:
+                  Text(member.role.toString(), style: textTheme.bodySmall),
+              trailing: member.role.toString() != 'owner'
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.remove_circle_outline,
+                        color: colorScheme.error,
                       ),
-                    );
-                    if (confirmed == true) {
-                      groupsController.removeMember(groupId, member.userId);
-                    }
-                  },
-                )
-              : null,
-        );
-      },
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            constraints: kIsWeb
+                                ? const BoxConstraints(maxWidth: 360)
+                                : null,
+                            title: const Text('Remove member?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text(
+                                  'Remove',
+                                  style: TextStyle(color: colorScheme.error),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          groupsController.removeMember(
+                              groupId, member.userId);
+                        }
+                      },
+                    )
+                  : null,
+            );
+          },
+        ),
+      ),
     );
   }
 }
