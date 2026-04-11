@@ -66,11 +66,11 @@ class VideosDataSource {
     }
   }
 
-  Future<VideoDownloadResponse> downloadVideo(
+  Future<VideoStreamUrlResponse> getStreamUrl(
       String sessionId, String videoId) async {
     try {
       return await _client.sessionVideos
-          .downloadVideoApiV1SessionsSessionIdVideosVideoIdDownloadGet(
+          .getStreamUrlApiV1SessionsSessionIdVideosVideoIdStreamUrlGet(
         sessionId: sessionId,
         videoId: videoId,
       );

@@ -153,10 +153,7 @@ class _GroupDetailPageState extends State<GroupDetailPage>
           );
           if (routine == null) return false;
 
-          final instance = await instancesCtrl.createInstance(
-            routine.id,
-            groupId: widget.groupId,
-          );
+          final instance = await instancesCtrl.createInstance(routine.id);
           if (instance == null) return false;
 
           await instancesCtrl.loadGroupInstances(widget.groupId);

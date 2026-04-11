@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/widgets/web_constrained_body.dart';
+import '../../../invitations/presentation/controllers/invitations_controller.dart';
 import '../controllers/groups_controller.dart';
 import '../controllers/groups_state.dart';
 import '../widgets/create_group_dialog.dart';
@@ -24,29 +25,48 @@ class _GroupsListPageState extends State<GroupsListPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GroupsController>().loadGroups();
+      context.read<InvitationsController>().load();
     });
   }
+
+  int get _pendingInviteCount =>
+      context.watch<InvitationsController>().pendingCount;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: kIsWeb
           ? null
-          : AppBar(title: const Text('Groups'), centerTitle: true),
+          : AppBar(
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Groups'),
+                  if (_pendingInviteCount > 0) ...[
+                    const SizedBox(width: AppDesignSystem.spacingXs),
+                    GestureDetector(
+                      onTap: () => context.push('/invitations'),
+                      child: Badge.count(count: _pendingInviteCount),
+                    ),
+                  ],
+                ],
+              ),
+              centerTitle: true,
+            ),
       body: Consumer<GroupsController>(
         builder: (context, controller, _) {
           final state = controller.state;
 
+          Widget bodyContent;
           if (state.status == GroupsStatus.loading && state.groups.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state.status == GroupsStatus.error && state.groups.isEmpty) {
-            return _buildErrorState(state.errorMessage, controller);
-          }
-
-          if (state.groups.isEmpty) {
-            return _buildEmptyState();
+            bodyContent = const Center(child: CircularProgressIndicator());
+          } else if (state.status == GroupsStatus.error &&
+              state.groups.isEmpty) {
+            bodyContent = _buildErrorState(state.errorMessage, controller);
+          } else if (state.groups.isEmpty) {
+            bodyContent = _buildEmptyState();
+          } else {
+            bodyContent = _buildList(context, controller);
           }
 
           return WebConstrainedBody(
@@ -54,7 +74,7 @@ class _GroupsListPageState extends State<GroupsListPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (kIsWeb) _buildWebHeader(context),
-                Expanded(child: _buildList(context, controller)),
+                Expanded(child: bodyContent),
               ],
             ),
           );
@@ -82,6 +102,13 @@ class _GroupsListPageState extends State<GroupsListPage> {
       child: Row(
         children: [
           Text('Groups', style: textTheme.headlineSmall),
+          if (_pendingInviteCount > 0) ...[
+            const SizedBox(width: AppDesignSystem.spacingXs),
+            GestureDetector(
+              onTap: () => context.push('/invitations'),
+              child: Badge.count(count: _pendingInviteCount),
+            ),
+          ],
           const Spacer(),
           TextButton.icon(
             onPressed: () => _showCreateGroupDialog(context),
@@ -189,6 +216,11 @@ class _GroupsListPageState extends State<GroupsListPage> {
               onPressed: () => _showCreateGroupDialog(context),
               icon: const Icon(Icons.add),
               label: const Text('Create Group'),
+            ),
+            const SizedBox(height: AppDesignSystem.spacingSm),
+            TextButton(
+              onPressed: () => context.push('/invitations'),
+              child: const Text('View pending invitations'),
             ),
           ],
         ),

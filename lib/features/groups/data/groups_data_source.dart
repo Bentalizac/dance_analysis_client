@@ -57,7 +57,7 @@ class GroupsDataSource {
     try {
       return await _client.groups.addMemberApiV1GroupsGroupIdMembersPost(
         groupId: groupId,
-        body: AddMemberRequest(userId: userId, role: role),
+        body: AddAdminRequest(userId: userId, role: role),
       );
     } on DioException catch (e) {
       throw mapDioException(e);

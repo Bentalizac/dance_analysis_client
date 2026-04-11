@@ -11,14 +11,13 @@ class RoutineInstancesDataSource {
 
   Future<RoutineSessionResponse> createInstance(
     String routineId, {
-    String? groupId,
     String? label,
   }) async {
     try {
       return await _client.routineSessions
           .createSessionApiV1RoutinesRoutineIdSessionsPost(
         routineId: routineId,
-        body: RoutineSessionCreate(groupId: groupId, label: label),
+        body: RoutineSessionCreate(label: label),
       );
     } on DioException catch (e) {
       throw mapDioException(e);
@@ -37,24 +36,20 @@ class RoutineInstancesDataSource {
     }
   }
 
-  Future<List<RoutineSessionResponse>> listGroupInstances(
-      String groupId) async {
-    try {
-      return await _client.routineSessions
-          .listGroupSessionsApiV1GroupsGroupIdSessionsGet(
-        groupId: groupId,
-      );
-    } on DioException catch (e) {
-      throw mapDioException(e);
-    }
-  }
-
   Future<RoutineSessionResponse> getInstance(String instanceId) async {
     try {
       return await _client.routineSessions
           .getSessionApiV1SessionsSessionIdGet(
         sessionId: instanceId,
       );
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
+  Future<List<RoutineSessionResponse>> listMySessions() async {
+    try {
+      return await _client.sessionState.listMySessionsApiV1MeSessionsGet();
     } on DioException catch (e) {
       throw mapDioException(e);
     }

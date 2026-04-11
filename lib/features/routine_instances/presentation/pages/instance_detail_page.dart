@@ -12,6 +12,7 @@ import '../../../routine_notes/data/notes_data_source.dart';
 import '../../../routine_notes/presentation/controllers/notes_controller.dart';
 import '../../../routine_videos/data/videos_data_source.dart';
 import '../../../routine_videos/presentation/controllers/videos_controller.dart';
+import '../../../session_access/data/session_access_data_source.dart';
 import '../controllers/routine_instances_controller.dart';
 import '../../../../shared/services/auth_service.dart';
 
@@ -85,32 +86,31 @@ class _InstanceDetailContentState extends State<_InstanceDetailContent>
           appBar: AppBar(
             title: Text(title),
             centerTitle: true,
-            actions: kIsWeb
-                ? [
-                    AnimatedBuilder(
-                      animation: _tabController,
-                      builder: (context, _) {
-                        switch (_tabController.index) {
-                          case 0:
-                            return IconButton(
-                              icon: const Icon(Icons.upload),
-                              tooltip: 'Upload Video',
-                              onPressed: () => context.push(
-                                  '/instances/${widget.instanceId}/upload'),
-                            );
-                          case 1:
-                            return IconButton(
-                              icon: const Icon(Icons.note_add),
-                              tooltip: 'Add Note',
-                              onPressed: () => _showAddNoteDialog(context),
-                            );
-                          default:
-                            return const SizedBox.shrink();
-                        }
-                      },
-                    ),
-                  ]
-                : null,
+            actions: [
+              if (kIsWeb)
+                AnimatedBuilder(
+                  animation: _tabController,
+                  builder: (context, _) => switch (_tabController.index) {
+                    0 => IconButton(
+                        icon: const Icon(Icons.upload),
+                        tooltip: 'Upload Video',
+                        onPressed: () => context
+                            .push('/instances/${widget.instanceId}/upload'),
+                      ),
+                    1 => IconButton(
+                        icon: const Icon(Icons.note_add),
+                        tooltip: 'Add Note',
+                        onPressed: () => _showAddNoteDialog(context),
+                      ),
+                    _ => const SizedBox.shrink(),
+                  },
+                ),
+              _InstanceOverflowMenu(
+                instance: instance,
+                instanceId: widget.instanceId,
+                onLeft: () => context.go('/routines'),
+              ),
+            ],
             bottom: TabBar(
               controller: _tabController,
               tabs: const [
@@ -506,3 +506,85 @@ class _NoteTile extends StatelessWidget {
     return '$minutes:${remaining.toString().padLeft(2, '0')}';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Overflow menu — leave session (non-owners only)
+// ---------------------------------------------------------------------------
+
+class _InstanceOverflowMenu extends StatelessWidget {
+  const _InstanceOverflowMenu({
+    required this.instance,
+    required this.instanceId,
+    required this.onLeft,
+  });
+
+  final dynamic instance; // RoutineSessionResponse?
+  final String instanceId;
+
+  /// Called after the user successfully leaves so the caller can navigate away.
+  final VoidCallback onLeft;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = context.read<AuthService>().currentUser?.id;
+    final ownerId = instance?.ownerId as String?;
+
+    // Only show the menu to non-owners who have access.
+    if (ownerId == null || ownerId == currentUserId) {
+      return const SizedBox.shrink();
+    }
+
+    return PopupMenuButton<_InstanceAction>(
+      onSelected: (action) {
+        if (action == _InstanceAction.leave) {
+          _confirmLeave(context, currentUserId!);
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: _InstanceAction.leave,
+          child: Text('Leave session'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmLeave(BuildContext context, String userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave session?'),
+        content: const Text(
+          'You will lose access to this session. '
+          'The session owner can add you back.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      try {
+        await context
+            .read<SessionAccessDataSource>()
+            .revokeAccess(instanceId, userId);
+        if (context.mounted) onLeft();
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to leave session.')),
+          );
+        }
+      }
+    }
+  }
+}
+
+enum _InstanceAction { leave }

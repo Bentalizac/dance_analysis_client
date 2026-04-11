@@ -15,19 +15,13 @@ class RoutineInstancesController extends ChangeNotifier {
   RoutineInstancesState _state = RoutineInstancesState.initial();
   RoutineInstancesState get state => _state;
 
+  // Sessions are no longer scoped to groups in the backend model.
+  // Group-linked sessions will be surfaced via session access in a future update.
   Future<void> loadGroupInstances(String groupId) async {
     _state = _state.copyWith(
-        status: RoutineInstancesStatus.loading, clearError: true);
-    notifyListeners();
-
-    try {
-      final instances = await _dataSource.listGroupInstances(groupId);
-      _state = _state.copyWith(
-          status: RoutineInstancesStatus.loaded, instances: instances);
-    } on AppException catch (e) {
-      _state = _state.copyWith(
-          status: RoutineInstancesStatus.error, errorMessage: e.message);
-    }
+      status: RoutineInstancesStatus.loaded,
+      instances: [],
+    );
     notifyListeners();
   }
 
@@ -63,16 +57,14 @@ class RoutineInstancesController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Creates an instance for a routine, optionally scoped to a group.
-  /// Returns the created instance so callers can navigate to it.
+  /// Creates a session for a routine and returns it so callers can navigate to it.
   Future<RoutineSessionResponse?> createInstance(
     String routineId, {
-    String? groupId,
     String? label,
   }) async {
     try {
-      final instance = await _dataSource.createInstance(routineId,
-          groupId: groupId, label: label);
+      final instance =
+          await _dataSource.createInstance(routineId, label: label);
       return instance;
     } on AppException catch (e) {
       _state = _state.copyWith(errorMessage: e.message);
@@ -97,13 +89,9 @@ class RoutineInstancesController extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteInstance(String instanceId,
-      {String? refreshGroupId}) async {
+  Future<bool> deleteInstance(String instanceId) async {
     try {
       await _dataSource.deleteInstance(instanceId);
-      if (refreshGroupId != null) {
-        await loadGroupInstances(refreshGroupId);
-      }
       return true;
     } on AppException catch (e) {
       _state = _state.copyWith(errorMessage: e.message);

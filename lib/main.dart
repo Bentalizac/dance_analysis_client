@@ -10,14 +10,20 @@ import 'features/dancer_slots/presentation/controllers/dancer_slots_controller.d
 import 'features/dances/data/dances_data_source.dart';
 import 'features/dances/presentation/controllers/dances_controller.dart';
 import 'features/group_invites/data/group_invites_data_source.dart';
+import 'features/invitations/presentation/controllers/invitations_controller.dart';
+import 'features/session_invites/data/session_invites_data_source.dart';
 import 'features/groups/data/groups_data_source.dart';
 import 'features/groups/presentation/controllers/groups_controller.dart';
 import 'features/routine_notes/data/notes_data_source.dart';
 import 'features/routine_instances/data/routine_instances_data_source.dart';
+import 'features/routine_instances/data/session_state_data_source.dart';
 import 'features/routine_instances/presentation/controllers/routine_instances_controller.dart';
+import 'features/session_access/data/session_access_data_source.dart';
+import 'features/session_participants/data/session_participants_data_source.dart';
 import 'features/routine_videos/data/videos_data_source.dart';
 import 'features/routines/data/routines_data_source.dart';
 import 'features/routines/presentation/controllers/routines_controller.dart';
+import 'features/routines/presentation/controllers/routines_feed_controller.dart';
 import 'features/slot_assignments/data/slot_assignments_data_source.dart';
 import 'features/slot_assignments/presentation/controllers/slot_assignments_controller.dart';
 import 'features/upload/data/video_repository.dart';
@@ -146,6 +152,10 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               GroupInvitesDataSource(context.read<ApiService>().client),
         ),
+        Provider<SessionInvitesDataSource>(
+          create: (context) =>
+              SessionInvitesDataSource(context.read<ApiService>().client),
+        ),
         Provider<RoutinesDataSource>(
           create: (context) =>
               RoutinesDataSource(context.read<ApiService>().client),
@@ -170,6 +180,18 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               SlotAssignmentsDataSource(context.read<ApiService>().client),
         ),
+        Provider<SessionStateDataSource>(
+          create: (context) =>
+              SessionStateDataSource(context.read<ApiService>().client),
+        ),
+        Provider<SessionAccessDataSource>(
+          create: (context) =>
+              SessionAccessDataSource(context.read<ApiService>().client),
+        ),
+        Provider<SessionParticipantsDataSource>(
+          create: (context) =>
+              SessionParticipantsDataSource(context.read<ApiService>().client),
+        ),
 
         // Global controllers (list-level state only)
         // Note: VideosController and NotesController are scoped to
@@ -188,6 +210,16 @@ class MyApp extends StatelessWidget {
             dancerSlotsDataSource: context.read<DancerSlotsDataSource>(),
           ),
         ),
+        ChangeNotifierProxyProvider<AuthService, RoutinesFeedController>(
+          create: (context) => RoutinesFeedController(
+            routinesDataSource: context.read<RoutinesDataSource>(),
+            instancesDataSource: context.read<RoutineInstancesDataSource>(),
+            sessionStateDataSource: context.read<SessionStateDataSource>(),
+            dancerSlotsDataSource: context.read<DancerSlotsDataSource>(),
+            authService: context.read<AuthService>(),
+          ),
+          update: (context, auth, controller) => controller!,
+        ),
         ChangeNotifierProvider<RoutineInstancesController>(
           create: (context) => RoutineInstancesController(
             dataSource: context.read<RoutineInstancesDataSource>(),
@@ -201,6 +233,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<SlotAssignmentsController>(
           create: (context) => SlotAssignmentsController(
             dataSource: context.read<SlotAssignmentsDataSource>(),
+          ),
+        ),
+        ChangeNotifierProvider<InvitationsController>(
+          create: (context) => InvitationsController(
+            groupInvitesDataSource: context.read<GroupInvitesDataSource>(),
+            sessionInvitesDataSource: context.read<SessionInvitesDataSource>(),
           ),
         ),
       ],

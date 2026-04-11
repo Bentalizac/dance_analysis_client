@@ -62,7 +62,7 @@ class _VideoDetailContent extends StatefulWidget {
 
 class _VideoDetailContentState extends State<_VideoDetailContent> {
   int _selectedGroupIndex = 0;
-  String? _downloadUrl;
+  String? _streamUrl;
   bool _isLoadingVideo = true;
   String? _videoError;
 
@@ -76,18 +76,18 @@ class _VideoDetailContentState extends State<_VideoDetailContent> {
             widget.videoId,
           );
       context.read<GroupsController>().loadGroups();
-      _fetchDownloadUrl();
+      _fetchStreamUrl();
     });
   }
 
-  Future<void> _fetchDownloadUrl() async {
+  Future<void> _fetchStreamUrl() async {
     try {
       final response = await context
           .read<VideosDataSource>()
-          .downloadVideo(widget.instanceId, widget.videoId);
+          .getStreamUrl(widget.instanceId, widget.videoId);
       if (mounted) {
         setState(() {
-          _downloadUrl = response.downloadUrl;
+          _streamUrl = response.streamUrl;
           _isLoadingVideo = false;
         });
       }
@@ -261,7 +261,7 @@ class _VideoDetailContentState extends State<_VideoDetailContent> {
       );
     }
 
-    if (_videoError != null || _downloadUrl == null) {
+    if (_videoError != null || _streamUrl == null) {
       return AspectRatio(
         aspectRatio: 16 / 9,
         child: Container(
@@ -285,7 +285,7 @@ class _VideoDetailContentState extends State<_VideoDetailContent> {
     }
 
     return VideoPlayerWithPoseOverlay(
-      videoPath: _downloadUrl!,
+      videoPath: _streamUrl!,
       poseDataList: const [],
     );
   }

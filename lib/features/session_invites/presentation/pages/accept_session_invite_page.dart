@@ -3,39 +3,40 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/exceptions/app_exceptions.dart';
-import '../../../../generated/api/models/group_membership_response.dart';
-import '../../../../generated/api/models/invite_lookup_response.dart';
+import '../../../../generated/api/models/session_access_response.dart';
+import '../../../../generated/api/models/session_invite_lookup_response.dart';
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/services/auth_service.dart';
-import '../../data/group_invites_data_source.dart';
+import '../../data/session_invites_data_source.dart';
 
 enum _Phase { loadingPreview, preview, accepting, accepted, error }
 
-/// Standalone page for accepting a group invite via token.
+/// Standalone page for accepting a session invite via token.
 ///
-/// Public route — no auth required to land here. Calls the unauthenticated
-/// [GroupInvitesDataSource.lookupInvite] endpoint first to show the group name
-/// and role, then:
+/// Public route — no auth required to land here. The page calls the
+/// unauthenticated [SessionInvitesDataSource.lookupInvite] endpoint first to
+/// show invite details, then:
 ///
 /// - **Unauthenticated**: shows "Log In" / "Create Account" buttons that
 ///   redirect to `/login?from=<this path>`. On return the page reloads and
 ///   the accept button is shown.
 /// - **Authenticated**: shows an explicit "Accept Invitation" button.
 ///
-/// Accessed via `/accept-invite/:token`.
-class AcceptInvitePage extends StatefulWidget {
-  const AcceptInvitePage({super.key, required this.token});
+/// Accessed via `/accept-session-invite/:token`.
+class AcceptSessionInvitePage extends StatefulWidget {
+  const AcceptSessionInvitePage({super.key, required this.token});
 
   final String token;
 
   @override
-  State<AcceptInvitePage> createState() => _AcceptInvitePageState();
+  State<AcceptSessionInvitePage> createState() =>
+      _AcceptSessionInvitePageState();
 }
 
-class _AcceptInvitePageState extends State<AcceptInvitePage> {
+class _AcceptSessionInvitePageState extends State<AcceptSessionInvitePage> {
   _Phase _phase = _Phase.loadingPreview;
-  InviteLookupResponse? _preview;
-  GroupMembershipResponse? _membership;
+  SessionInviteLookupResponse? _preview;
+  SessionAccessResponse? _access;
   String? _errorMessage;
 
   @override
@@ -51,7 +52,7 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
     });
 
     try {
-      final ds = context.read<GroupInvitesDataSource>();
+      final ds = context.read<SessionInvitesDataSource>();
       final preview = await ds.lookupInvite(widget.token);
       if (!mounted) return;
       setState(() {
@@ -74,11 +75,11 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
     });
 
     try {
-      final ds = context.read<GroupInvitesDataSource>();
-      final membership = await ds.acceptInvite(widget.token);
+      final ds = context.read<SessionInvitesDataSource>();
+      final access = await ds.acceptInvite(widget.token);
       if (!mounted) return;
       setState(() {
-        _membership = membership;
+        _access = access;
         _phase = _Phase.accepted;
       });
     } on AppException catch (e) {
@@ -91,7 +92,7 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
   }
 
   void _goToLogin() {
-    final from = Uri.encodeComponent('/accept-invite/${widget.token}');
+    final from = Uri.encodeComponent('/accept-session-invite/${widget.token}');
     context.go('/login?from=$from');
   }
 
@@ -139,20 +140,18 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
     bool isAuthenticated,
   ) {
     final preview = _preview!;
-    final roleLabel = preview.role?.json != null
-        ? preview.role!.json![0].toUpperCase() +
-            preview.role!.json!.substring(1)
-        : 'Member';
+    final roleLabel =
+        preview.role[0].toUpperCase() + preview.role.substring(1);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.group_add_outlined, size: 64, color: colorScheme.primary),
+        Icon(Icons.mail_outline, size: 64, color: colorScheme.primary),
         const SizedBox(height: AppDesignSystem.spacingMd),
         Text("You've been invited", style: textTheme.headlineSmall),
         const SizedBox(height: AppDesignSystem.spacingSm),
         Text(
-          "You've been invited to join ${preview.groupName} as $roleLabel.",
+          "You've been invited to join ${preview.routineName} as $roleLabel.",
           style: textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -194,10 +193,18 @@ class _AcceptInvitePageState extends State<AcceptInvitePage> {
         Icon(Icons.check_circle, size: 64, color: AppDesignSystem.success),
         const SizedBox(height: AppDesignSystem.spacingMd),
         Text('Invite accepted!', style: textTheme.titleLarge),
+        const SizedBox(height: AppDesignSystem.spacingSm),
+        Text(
+          'You now have access to the routine.',
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: AppDesignSystem.spacingLg),
         ElevatedButton(
-          onPressed: () => context.go('/groups/${_membership!.groupId}'),
-          child: const Text('Go to Group'),
+          onPressed: () => context.go('/routines'),
+          child: const Text('Go to Routines'),
         ),
       ],
     );

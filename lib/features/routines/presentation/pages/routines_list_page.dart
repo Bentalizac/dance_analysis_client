@@ -5,12 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../../../shared/design_system/theme.dart';
 import '../../../../shared/widgets/web_constrained_body.dart';
-import '../controllers/routines_controller.dart';
-import '../controllers/routines_state.dart';
+import '../controllers/routines_feed_controller.dart';
+import '../controllers/routines_feed_state.dart';
 import '../widgets/create_routine_dialog.dart';
 import '../widgets/routine_card.dart';
+import '../widgets/session_card.dart';
 
-/// Top-level list of the current user's routines.
+/// Unified feed of owned routines and shared sessions.
 class RoutinesListPage extends StatefulWidget {
   const RoutinesListPage({super.key});
 
@@ -23,7 +24,7 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RoutinesController>().loadRoutines();
+      context.read<RoutinesFeedController>().load();
     });
   }
 
@@ -35,17 +36,20 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
     return Scaffold(
       appBar: kIsWeb
           ? null
-          : AppBar(title: const Text('My Routines'), centerTitle: true),
-      body: Consumer<RoutinesController>(
+          : AppBar(title: const Text('Routines'), centerTitle: true),
+      body: Consumer<RoutinesFeedController>(
         builder: (context, ctrl, _) {
           final state = ctrl.state;
 
-          if (state.status == RoutinesStatus.loading &&
-              state.routines.isEmpty) {
+          if (state.status == RoutinesFeedStatus.loading &&
+              state.ownedItems.isEmpty &&
+              state.sharedItems.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state.status == RoutinesStatus.error) {
+          if (state.status == RoutinesFeedStatus.error &&
+              state.ownedItems.isEmpty &&
+              state.sharedItems.isEmpty) {
             return Center(
               child: Text(
                 state.errorMessage ?? 'Failed to load routines.',
@@ -55,41 +59,13 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             );
           }
 
-          if (state.routines.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.library_music_outlined,
-                    size: 64,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingMd),
-                  Text(
-                    'No routines yet',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppDesignSystem.spacingSm),
-                  Text(
-                    kIsWeb
-                        ? 'Click + New Routine to get started.'
-                        : 'Tap + to create your first routine.',
-                    style: textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            );
-          }
-
           return WebConstrainedBody(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (kIsWeb) _buildWebHeader(context, ctrl),
-                Expanded(child: _buildList(context, ctrl)),
+                _buildFilterChips(context, ctrl),
+                Expanded(child: _buildFeed(context, ctrl)),
               ],
             ),
           );
@@ -104,7 +80,7 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
     );
   }
 
-  Widget _buildWebHeader(BuildContext context, RoutinesController ctrl) {
+  Widget _buildWebHeader(BuildContext context, RoutinesFeedController ctrl) {
     final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -115,7 +91,7 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
       ),
       child: Row(
         children: [
-          Text('My Routines', style: textTheme.headlineSmall),
+          Text('Routines', style: textTheme.headlineSmall),
           const Spacer(),
           TextButton.icon(
             onPressed: () => _showCreateRoutineDialog(context),
@@ -127,10 +103,46 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
     );
   }
 
-  Widget _buildList(BuildContext context, RoutinesController ctrl) {
-    final routines = ctrl.state.routines;
+  Widget _buildFilterChips(
+      BuildContext context, RoutinesFeedController ctrl) {
+    final state = ctrl.state;
+    final filters = [
+      RoutinesFeedFilter.all,
+      RoutinesFeedFilter.owned,
+      RoutinesFeedFilter.shared,
+      if (state.hasArchivedSessions) RoutinesFeedFilter.archived,
+    ];
 
-    // Web: responsive grid + scrollbar, no pull-to-refresh.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignSystem.spacingMd,
+        vertical: AppDesignSystem.spacingSm,
+      ),
+      child: Row(
+        children: [
+          for (final filter in filters)
+            Padding(
+              padding: const EdgeInsets.only(right: AppDesignSystem.spacingXs),
+              child: FilterChip(
+                label: Text(_filterLabel(filter)),
+                selected: state.filter == filter,
+                onSelected: (_) => ctrl.setFilter(filter),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeed(BuildContext context, RoutinesFeedController ctrl) {
+    final state = ctrl.state;
+    final items = state.visibleItems;
+
+    if (items.isEmpty) {
+      return _buildEmptyState(context, state.filter);
+    }
+
     if (kIsWeb) {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -138,67 +150,156 @@ class _RoutinesListPageState extends State<RoutinesListPage> {
             return Scrollbar(
               child: GridView.builder(
                 padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: AppDesignSystem.spacingSm,
                   mainAxisSpacing: AppDesignSystem.spacingSm,
                   mainAxisExtent: 72,
                 ),
-                itemCount: routines.length,
-                itemBuilder: (context, index) {
-                  final routine = routines[index];
-                  return RoutineCard(
-                    routine: routine,
-                    onTap: () => context.push('/routines/${routine.id}'),
-                  );
-                },
+                itemCount: items.length,
+                itemBuilder: (context, index) =>
+                    _buildItem(context, items[index]),
               ),
             );
           }
           return Scrollbar(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-              itemCount: routines.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppDesignSystem.spacingSm),
-              itemBuilder: (context, index) {
-                final routine = routines[index];
-                return RoutineCard(
-                  routine: routine,
-                  onTap: () => context.push('/routines/${routine.id}'),
-                );
-              },
-            ),
+            child: _buildListView(context, items),
           );
         },
       );
     }
 
-    // Native: pull-to-refresh + single-column list.
     return RefreshIndicator(
-      onRefresh: () => ctrl.loadRoutines(),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
-        itemCount: routines.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(height: AppDesignSystem.spacingSm),
-        itemBuilder: (context, index) {
-          final routine = routines[index];
-          return RoutineCard(
-            routine: routine,
-            onTap: () => context.push('/routines/${routine.id}'),
-          );
-        },
+      onRefresh: () => ctrl.load(),
+      child: _buildListView(context, items),
+    );
+  }
+
+  Widget _buildListView(
+      BuildContext context, List<RoutinesFeedItem> items) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppDesignSystem.spacingMd),
+      itemCount: items.length,
+      separatorBuilder: (_, _) =>
+          const SizedBox(height: AppDesignSystem.spacingSm),
+      itemBuilder: (context, index) => _buildItem(context, items[index]),
+    );
+  }
+
+  Widget _buildItem(BuildContext context, RoutinesFeedItem item) {
+    final ctrl = context.read<RoutinesFeedController>();
+    return switch (item) {
+      OwnedRoutineItem(:final routine) => RoutineCard(
+          routine: routine,
+          onTap: () => context.push('/routines/${routine.id}'),
+        ),
+      SharedSessionItem(:final session, :final isArchived) => SessionCard(
+          session: session,
+          isArchived: isArchived,
+          onTap: () => context.push('/instances/${session.id}'),
+          onArchive: isArchived ? null : () => ctrl.archiveSession(session.id),
+          onUnarchive:
+              isArchived ? () => ctrl.unarchiveSession(session.id) : null,
+          onHide: () => _confirmHide(context, session.id),
+        ),
+    };
+  }
+
+  Future<void> _confirmHide(BuildContext context, String sessionId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove from your list?'),
+        content: const Text(
+          'This routine will be hidden from your list. '
+          'Your access is not affected — you can still be added back.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      context.read<RoutinesFeedController>().hideSession(sessionId);
+    }
+  }
+
+  Widget _buildEmptyState(
+      BuildContext context, RoutinesFeedFilter filter) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final (icon, title, subtitle) = switch (filter) {
+      RoutinesFeedFilter.all => (
+          Icons.library_music_outlined,
+          'No routines yet',
+          kIsWeb
+              ? 'Click + New Routine to get started.'
+              : 'Tap + to create your first routine.',
+        ),
+      RoutinesFeedFilter.owned => (
+          Icons.library_music_outlined,
+          'No owned routines',
+          kIsWeb
+              ? 'Click + New Routine to create one.'
+              : 'Tap + to create a routine.',
+        ),
+      RoutinesFeedFilter.shared => (
+          Icons.group_outlined,
+          'No shared routines',
+          'Routines shared with you will appear here.',
+        ),
+      RoutinesFeedFilter.archived => (
+          Icons.archive_outlined,
+          'No archived routines',
+          'Archived shared routines will appear here.',
+        ),
+    };
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 64,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: AppDesignSystem.spacingMd),
+          Text(
+            title,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppDesignSystem.spacingSm),
+          Text(subtitle, style: textTheme.bodySmall),
+        ],
       ),
     );
   }
+
+  String _filterLabel(RoutinesFeedFilter filter) => switch (filter) {
+        RoutinesFeedFilter.all => 'All',
+        RoutinesFeedFilter.owned => 'Owned',
+        RoutinesFeedFilter.shared => 'Shared',
+        RoutinesFeedFilter.archived => 'Archived',
+      };
 
   void _showCreateRoutineDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => CreateRoutineDialog(
         onSubmit: (title, danceId) async {
-          final ctrl = context.read<RoutinesController>();
+          final ctrl = context.read<RoutinesFeedController>();
           final routine = await ctrl.createRoutine(
             title: title,
             danceId: danceId,

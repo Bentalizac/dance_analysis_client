@@ -9,6 +9,24 @@ class GroupInvitesDataSource {
 
   final RestClient _client;
 
+  Future<InviteLookupResponse> lookupInvite(String token) async {
+    try {
+      return await _client.groupInvites
+          .lookupInviteApiV1GroupInvitesLookupGet(token: token);
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
+  Future<List<GroupInvitePendingResponse>> listPending() async {
+    try {
+      return await _client.groupInvites
+          .listPendingInvitesApiV1GroupInvitesPendingGet();
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
   Future<GroupInviteResponse> createInvite(
     String groupId, {
     required String email,

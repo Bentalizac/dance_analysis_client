@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/group_invites/presentation/pages/accept_invite_page.dart';
+import '../features/invitations/presentation/pages/pending_invitations_page.dart';
+import '../features/session_invites/presentation/pages/accept_session_invite_page.dart';
 import '../features/groups/presentation/pages/group_detail_page.dart';
 import '../features/groups/presentation/pages/groups_list_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
@@ -53,7 +55,7 @@ final GoRouter appRouter = GoRouter(
         goingTo.startsWith('/routines') ||
         goingTo.startsWith('/instances') ||
         goingTo.startsWith('/groups') ||
-        goingTo.startsWith('/accept-invite');
+        goingTo == '/invitations';
 
     if (!isLoggedIn && isProtected) {
       final from = Uri.encodeComponent(state.uri.toString());
@@ -77,6 +79,17 @@ final GoRouter appRouter = GoRouter(
       name: 'acceptInvite',
       builder: (context, state) =>
           AcceptInvitePage(token: state.pathParameters['token']!),
+    ),
+    GoRoute(
+      path: '/accept-session-invite/:token',
+      name: 'acceptSessionInvite',
+      builder: (context, state) =>
+          AcceptSessionInvitePage(token: state.pathParameters['token']!),
+    ),
+    GoRoute(
+      path: '/invitations',
+      name: 'invitations',
+      builder: (context, state) => const PendingInvitationsPage(),
     ),
     // Main scaffold with persistent bottom navigation
     ShellRoute(
